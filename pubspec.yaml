@@ -1,5 +1,5 @@
 name: nexo
-description: "A new Flutter package project."
+description: A modular Flutter architecture toolkit with bloc helpers, error handling, data sources, and logging utilities.
 version: 0.0.1
 homepage:
 
