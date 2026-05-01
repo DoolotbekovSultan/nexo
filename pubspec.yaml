@@ -1,7 +1,7 @@
 name: nexo
-description: A modular Flutter architecture toolkit with bloc helpers, error handling, data sources, and logging utilities.
-version: 0.0.1
-homepage:
+version: 0.0.1-beta.1
+repository: https://github.com/yourname/nexo
+description: Reusable architecture, error handling, and logging utilities for Flutter apps.
 
 environment:
   sdk: ^3.11.3
@@ -17,6 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  flutter_screenutil: ^5.9.3
   freezed_annotation: ^3.1.0
   hive: ^2.2.3
   isar: ^3.1.0+1

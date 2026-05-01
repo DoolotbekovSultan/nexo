@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:nexo/packages/nexo_core/network/dio_client.dart';
+import 'package:nexo/packages/nexo_core/network/client/dio_client.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
 

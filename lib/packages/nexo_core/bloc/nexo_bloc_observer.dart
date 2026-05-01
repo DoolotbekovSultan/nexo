@@ -6,7 +6,25 @@ import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 class NexoBlocObserver extends BlocObserver {
   final NexoLogger _logger;
 
-  NexoBlocObserver(this._logger);
+  final bool logLifecycle;
+  final bool logEvents;
+  final bool logChanges;
+  final bool logErrors;
+
+  final int maxLogLength;
+
+  /// Можно фильтровать конкретные Bloc/Cubit
+  final bool Function(BlocBase bloc)? shouldLogBloc;
+
+  const NexoBlocObserver(
+    this._logger, {
+    this.logLifecycle = true,
+    this.logEvents = true,
+    this.logChanges = true,
+    this.logErrors = true,
+    this.maxLogLength = 1000,
+    this.shouldLogBloc,
+  });
 
   String _blocName(BlocBase bloc) => bloc.runtimeType.toString();
 
@@ -14,47 +32,103 @@ class NexoBlocObserver extends BlocObserver {
     return '[${_blocName(bloc)}] $message';
   }
 
+  bool _canLog(BlocBase bloc) {
+    return shouldLogBloc?.call(bloc) ?? true;
+  }
+
+  void _safeLog(void Function() action) {
+    try {
+      action();
+    } catch (_) {
+      // логгер не должен ломать приложение
+    }
+  }
+
+  String _limit(Object? value) {
+    final text = value.toString();
+    if (text.length <= maxLogLength) return text;
+    return '${text.substring(0, maxLogLength)}... [truncated]';
+  }
+
   @override
   void onCreate(BlocBase bloc) {
     super.onCreate(bloc);
-    _logger.debug(_tag(bloc, 'Created'));
+
+    if (!logLifecycle || !_canLog(bloc)) return;
+
+    _safeLog(() {
+      _logger.debug(_tag(bloc, 'Created'));
+    });
   }
 
   @override
   void onClose(BlocBase bloc) {
-    _logger.debug(_tag(bloc, 'Closed'));
+    if (!logLifecycle || !_canLog(bloc)) {
+      super.onClose(bloc);
+      return;
+    }
+
+    _safeLog(() {
+      _logger.debug(_tag(bloc, 'Closed'));
+    });
+
     super.onClose(bloc);
   }
 
   @override
   void onEvent(Bloc bloc, Object? event) {
-    _logger.info(_tag(bloc, 'Event: $event'));
+    if (!logEvents || !_canLog(bloc)) {
+      super.onEvent(bloc, event);
+      return;
+    }
+
+    _safeLog(() {
+      _logger.info(_tag(bloc, 'Event: ${_limit(event)}'));
+    });
+
     super.onEvent(bloc, event);
   }
 
   @override
   void onChange(BlocBase bloc, Change change) {
+    if (!logChanges || !_canLog(bloc)) {
+      super.onChange(bloc, change);
+      return;
+    }
+
     if (change.currentState == change.nextState) {
       super.onChange(bloc, change);
       return;
     }
 
-    _logger.debug(
-      _tag(bloc, 'State: ${change.currentState} → ${change.nextState}'),
-    );
+    _safeLog(() {
+      _logger.debug(
+        _tag(
+          bloc,
+          'State: ${_limit(change.currentState)} → ${_limit(change.nextState)}',
+        ),
+      );
+    });
 
     super.onChange(bloc, change);
   }
 
   @override
   void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
+    if (!logErrors || !_canLog(bloc)) {
+      super.onError(bloc, error, stackTrace);
+      return;
+    }
+
     final failure = _toFailure(error, stackTrace);
 
-    _logger.error(
-      message: _tag(bloc, 'Error: ${failure.userMessage}'),
-      error: error,
-      stackTrace: stackTrace,
-    );
+    _safeLog(() {
+      _logger.error(
+        message: _tag(bloc, 'Error: ${_limit(failure.userMessage)}'),
+        error: error,
+        stackTrace: stackTrace,
+      );
+    });
 
     super.onError(bloc, error, stackTrace);
   }
