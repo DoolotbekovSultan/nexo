@@ -1,5 +1,5 @@
 name: nexo
-version: 0.0.1-beta.1
+version: 0.0.2-beta.1
 repository: https://github.com/yourname/nexo
 description: Reusable architecture, error handling, and logging utilities for Flutter apps.
 
