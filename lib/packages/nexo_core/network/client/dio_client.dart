@@ -267,10 +267,10 @@ class DioClient {
   }
 
   Map<String, dynamic> get config => {
-        'baseUrl': _dio.options.baseUrl,
-        'connectTimeout': _dio.options.connectTimeout?.inSeconds,
-        'receiveTimeout': _dio.options.receiveTimeout?.inSeconds,
-        'sendTimeout': _dio.options.sendTimeout?.inSeconds,
-        'headers': Map<String, dynamic>.from(_dio.options.headers),
-      };
+    'baseUrl': _dio.options.baseUrl,
+    'connectTimeout': _dio.options.connectTimeout?.inSeconds,
+    'receiveTimeout': _dio.options.receiveTimeout?.inSeconds,
+    'sendTimeout': _dio.options.sendTimeout?.inSeconds,
+    'headers': Map<String, dynamic>.from(_dio.options.headers),
+  };
 }

@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Pub get (package)
+        run: flutter pub get
+      - name: Format
+        run: dart format --set-exit-if-changed lib test example/lib
+      - name: Analyze package
+        run: flutter analyze
+      - name: Unit tests
+        run: flutter test
+      - name: Dart doc
+        run: dart doc --validate-links lib
+      - name: Pub get (example)
+        working-directory: example
+        run: flutter pub get
+      - name: Analyze example
+        working-directory: example
+        run: flutter analyze
+      - name: Example tests
+        working-directory: example
+        run: flutter test

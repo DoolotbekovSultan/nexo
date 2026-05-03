@@ -1,19 +1,18 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
+import 'package:nexo/packages/nexo_errors/result.dart';
 
 import 'failure_support.dart';
 
-abstract class NexoBloc<Event, State> extends Bloc<Event, State>
-    with FailureSupport {
+abstract class NexoBloc<Event, S> extends Bloc<Event, S> with FailureSupport {
   NexoBloc(super.initialState);
 
   Future<void> execute<T>({
-    required Emitter<State> emit,
+    required Emitter<S> emit,
     required Future<T> Function() action,
-    State Function()? onLoading,
-    required State Function(T data) onSuccess,
-    required State Function(Failure failure) onError,
+    S Function()? onLoading,
+    required S Function(T data) onSuccess,
+    required S Function(Failure failure) onError,
   }) async {
     if (onLoading != null && !emit.isDone) {
       emit(onLoading());
@@ -32,11 +31,11 @@ abstract class NexoBloc<Event, State> extends Bloc<Event, State>
   }
 
   Future<void> executeEither<T>({
-    required Emitter<State> emit,
-    required Future<Either<Failure, T>> Function() action,
-    State Function()? onLoading,
-    required State Function(T data) onSuccess,
-    required State Function(Failure failure) onError,
+    required Emitter<S> emit,
+    required Future<Result<T>> Function() action,
+    S Function()? onLoading,
+    required S Function(T data) onSuccess,
+    required S Function(Failure failure) onError,
   }) async {
     if (onLoading != null && !emit.isDone) {
       emit(onLoading());
@@ -59,11 +58,11 @@ abstract class NexoBloc<Event, State> extends Bloc<Event, State>
   }
 
   Future<void> subscribe<T>({
-    required Emitter<State> emit,
+    required Emitter<S> emit,
     required Stream<T> Function() stream,
-    State Function()? onLoading,
-    required State Function(T data) onData,
-    required State Function(Failure failure) onError,
+    S Function()? onLoading,
+    required S Function(T data) onData,
+    required S Function(Failure failure) onError,
   }) async {
     if (onLoading != null && !emit.isDone) {
       emit(onLoading());
@@ -83,18 +82,18 @@ abstract class NexoBloc<Event, State> extends Bloc<Event, State>
   }
 
   Future<void> subscribeEither<T>({
-    required Emitter<State> emit,
-    required Stream<Either<Failure, T>> Function() stream,
-    State Function()? onLoading,
-    required State Function(T data) onData,
-    required State Function(Failure failure) onError,
+    required Emitter<S> emit,
+    required Stream<Result<T>> Function() stream,
+    S Function()? onLoading,
+    required S Function(T data) onData,
+    required S Function(Failure failure) onError,
   }) async {
     if (onLoading != null && !emit.isDone) {
       emit(onLoading());
     }
 
     try {
-      await emit.forEach<Either<Failure, T>>(
+      await emit.forEach<Result<T>>(
         stream(),
         onData: (result) {
           return result.fold(

@@ -1,21 +1,21 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
+import 'package:nexo/packages/nexo_errors/result.dart';
 
 import 'failure_support.dart';
 import 'subscription_mixin.dart';
 
-abstract class NexoCubit<State> extends Cubit<State>
+abstract class NexoCubit<S> extends Cubit<S>
     with FailureSupport, SubscriptionMixin {
   NexoCubit(super.initialState);
 
   Future<void> execute<T>({
     required Future<T> Function() action,
-    State Function()? onLoading,
-    required State Function(T data) onSuccess,
-    required State Function(Failure failure) onError,
+    S Function()? onLoading,
+    required S Function(T data) onSuccess,
+    required S Function(Failure failure) onError,
   }) async {
     if (onLoading != null && !isClosed) {
       emit(onLoading());
@@ -34,10 +34,10 @@ abstract class NexoCubit<State> extends Cubit<State>
   }
 
   Future<void> executeEither<T>({
-    required Future<Either<Failure, T>> Function() action,
-    State Function()? onLoading,
-    required State Function(T data) onSuccess,
-    required State Function(Failure failure) onError,
+    required Future<Result<T>> Function() action,
+    S Function()? onLoading,
+    required S Function(T data) onSuccess,
+    required S Function(Failure failure) onError,
   }) async {
     if (onLoading != null && !isClosed) {
       emit(onLoading());
@@ -61,9 +61,9 @@ abstract class NexoCubit<State> extends Cubit<State>
   Future<void> subscribe<T>({
     required Object subscriptionKey,
     required Stream<T> Function() stream,
-    State Function()? onLoading,
-    required State Function(T data) onData,
-    required State Function(Failure failure) onError,
+    S Function()? onLoading,
+    required S Function(T data) onData,
+    required S Function(Failure failure) onError,
     bool cancelPrevious = true,
   }) async {
     if (onLoading != null && !isClosed) {
@@ -98,10 +98,10 @@ abstract class NexoCubit<State> extends Cubit<State>
 
   Future<void> subscribeEither<T>({
     required Object subscriptionKey,
-    required Stream<Either<Failure, T>> Function() stream,
-    State Function()? onLoading,
-    required State Function(T data) onData,
-    required State Function(Failure failure) onError,
+    required Stream<Result<T>> Function() stream,
+    S Function()? onLoading,
+    required S Function(T data) onData,
+    required S Function(Failure failure) onError,
     bool cancelPrevious = true,
   }) async {
     if (onLoading != null && !isClosed) {

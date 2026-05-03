@@ -2,22 +2,16 @@ import 'package:dio/dio.dart';
 import 'package:nexo/packages/nexo_core/network/client/dio_client.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
-
 abstract class BaseRemoteDataSource {
   final DioClient client;
   final NexoLogger _logger;
 
-  const BaseRemoteDataSource(
-    this.client, {
-    required NexoLogger logger,
-  }) : _logger = logger;
+  const BaseRemoteDataSource(this.client, {required NexoLogger logger})
+    : _logger = logger;
 
   String _tag(String message) => '[Remote] $message';
 
-  Future<R> _run<R>(
-    String action,
-    Future<R> Function() operation,
-  ) async {
+  Future<R> _run<R>(String action, Future<R> Function() operation) async {
     try {
       return await operation();
     } on DioException catch (error, stackTrace) {

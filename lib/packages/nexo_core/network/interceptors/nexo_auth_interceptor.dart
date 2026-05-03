@@ -23,7 +23,7 @@ class NexoAuthInterceptor extends Interceptor {
   final LoggerCallback? onLog;
   final LoggerCallback? onWarning;
   final void Function(String message, Object error, StackTrace stackTrace)?
-      onErrorLog;
+  onErrorLog;
 
   Completer<String?>? _refreshCompleter;
   bool _isSessionExpired = false;
@@ -90,10 +90,7 @@ class NexoAuthInterceptor extends Interceptor {
 
       _isSessionExpired = false;
 
-      final response = await _retryRequest(
-        err.requestOptions,
-        newToken,
-      );
+      final response = await _retryRequest(err.requestOptions, newToken);
 
       handler.resolve(response);
     } catch (e, st) {
@@ -168,8 +165,7 @@ class NexoAuthInterceptor extends Interceptor {
     final headers = Map<String, dynamic>.from(options.headers)
       ..[authHeaderKey] = '$bearerPrefix $token';
 
-    final extra = Map<String, dynamic>.from(options.extra)
-      ..[retriedKey] = true;
+    final extra = Map<String, dynamic>.from(options.extra)..[retriedKey] = true;
 
     onLog?.call('Retrying: ${options.method} ${options.uri}');
 

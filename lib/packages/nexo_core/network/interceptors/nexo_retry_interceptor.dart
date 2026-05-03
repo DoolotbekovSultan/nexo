@@ -27,7 +27,7 @@ class NexoRetryInterceptor extends Interceptor {
   final RetryDelayCalculator? customDelayCalculator;
 
   final void Function(int retryAttempt, Duration delay, DioException error)?
-      onRetry;
+  onRetry;
   final void Function(int retryAttempts, DioException error)? onRetryFailed;
 
   const NexoRetryInterceptor({
@@ -49,9 +49,9 @@ class NexoRetryInterceptor extends Interceptor {
     this.customDelayCalculator,
     this.onRetry,
     this.onRetryFailed,
-  })  : assert(maxRetries >= 0),
-        assert(backoffMultiplier >= 1),
-        assert(jitterFactor >= 0 && jitterFactor <= 1);
+  }) : assert(maxRetries >= 0),
+       assert(backoffMultiplier >= 1),
+       assert(jitterFactor >= 0 && jitterFactor <= 1);
 
   @override
   Future<void> onError(
@@ -115,10 +115,7 @@ class NexoRetryInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(
-    Response response,
-    ResponseInterceptorHandler handler,
-  ) {
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
     _clearRetryState(response.requestOptions);
     handler.next(response);
   }

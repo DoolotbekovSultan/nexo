@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
 import 'package:nexo/packages/nexo_errors/failure_mapper_extension.dart';
+import 'package:nexo/packages/nexo_errors/result.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
 abstract class NexoStreamUseCase<T, Params> {
@@ -12,7 +12,7 @@ abstract class NexoStreamUseCase<T, Params> {
 
   Stream<T> build(Params params);
 
-  Stream<Either<Failure, T>> call(Params params) async* {
+  Stream<Result<T>> call(Params params) async* {
     _logger.debug('StreamUseCase started: $runtimeType');
 
     try {
@@ -26,7 +26,7 @@ abstract class NexoStreamUseCase<T, Params> {
 
       _logger.error(
         message:
-            'StreamUseCase failed: $runtimeType, failure: ${failure.userMessage}',
+            'StreamUseCase failed: $runtimeType, code: ${failure.code}, message: ${failure.userMessage}',
         error: e,
         stackTrace: s,
       );

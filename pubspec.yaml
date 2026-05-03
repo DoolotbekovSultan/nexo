@@ -1,6 +1,6 @@
 name: nexo
-version: 0.0.2-beta.1
-repository: https://github.com/yourname/nexo
+version: 0.0.3-beta.1
+repository: https://github.com/DoolotbekovSultan/nexo
 description: Reusable architecture, error handling, and logging utilities for Flutter apps.
 
 environment:
@@ -16,6 +16,7 @@ dependencies:
   firebase_core: ^4.6.0
   flutter:
     sdk: flutter
+  flutter_secure_storage: ^9.2.4
   flutter_bloc: ^9.1.1
   flutter_screenutil: ^5.9.3
   freezed_annotation: ^3.1.0

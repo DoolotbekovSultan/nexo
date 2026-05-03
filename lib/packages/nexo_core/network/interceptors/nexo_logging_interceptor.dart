@@ -180,9 +180,7 @@ class NexoLoggingInterceptor extends Interceptor {
   }
 
   Map<String, String> _normalizeHeaders(Headers headers) {
-    return headers.map.map(
-      (key, value) => MapEntry(key, value.join(', ')),
-    );
+    return headers.map.map((key, value) => MapEntry(key, value.join(', ')));
   }
 
   dynamic _filterSensitiveData(dynamic data) {
@@ -252,18 +250,12 @@ class NexoLoggingInterceptor extends Interceptor {
       final escaped = RegExp.escape(field);
 
       result = result.replaceAllMapped(
-        RegExp(
-          '("$escaped"\\s*:\\s*")([^"]*)(")',
-          caseSensitive: false,
-        ),
+        RegExp('("$escaped"\\s*:\\s*")([^"]*)(")', caseSensitive: false),
         (match) => '${match.group(1)}***FILTERED***${match.group(3)}',
       );
 
       result = result.replaceAllMapped(
-        RegExp(
-          '($escaped\\s*=\\s*)([^&\\s]+)',
-          caseSensitive: false,
-        ),
+        RegExp('($escaped\\s*=\\s*)([^&\\s]+)', caseSensitive: false),
         (match) => '${match.group(1)}***FILTERED***',
       );
     }

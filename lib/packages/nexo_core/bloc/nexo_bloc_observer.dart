@@ -124,7 +124,10 @@ class NexoBlocObserver extends BlocObserver {
 
     _safeLog(() {
       _logger.error(
-        message: _tag(bloc, 'Error: ${_limit(failure.userMessage)}'),
+        message: _tag(
+          bloc,
+          'Error [${failure.code}]: ${_limit(failure.userMessage)}',
+        ),
         error: error,
         stackTrace: stackTrace,
       );
