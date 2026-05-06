@@ -2,9 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:nexo/nexo.dart';
 import 'package:talker/talker.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const NexoExampleApp());
+Future<void> main() async {
+  await NexoFlutterErrors.runAppInZone(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    final talker = Talker();
+    final logger = TalkerLoggerAdapter(talker);
+    const crashReporter = NoOpNexoCrashReporter();
+    NexoFlutterErrors.install(logger: logger, crashReporter: crashReporter);
+    Bloc.observer = NexoBlocObserver(
+      logger,
+      crashReporter: crashReporter,
+      logEvents: false,
+    );
+    logger.debug('Example starting (NexoFlutterErrors + NexoBlocObserver)');
+    runApp(const NexoExampleApp());
+  });
 }
 
 class NexoExampleApp extends StatelessWidget {
@@ -42,9 +54,9 @@ class _FailureDemoPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text('logCategory: ${failure.logCategory}'),
             const Divider(),
-            const Text('Logger + BlocObserver'),
+            const Text('Logger + BlocObserver (see console)'),
             const SizedBox(height: 8),
-            _LoggerDemo(),
+            const _LoggerDemo(),
           ],
         ),
       ),
@@ -52,26 +64,11 @@ class _FailureDemoPage extends StatelessWidget {
   }
 }
 
-class _LoggerDemo extends StatefulWidget {
-  @override
-  State<_LoggerDemo> createState() => _LoggerDemoState();
-}
-
-class _LoggerDemoState extends State<_LoggerDemo> {
-  late final Talker _talker;
-  late final NexoLogger _logger;
-
-  @override
-  void initState() {
-    super.initState();
-    _talker = Talker();
-    _logger = TalkerLoggerAdapter(_talker);
-    Bloc.observer = NexoBlocObserver(_logger, logEvents: false);
-    _logger.debug('Example started');
-  }
+class _LoggerDemo extends StatelessWidget {
+  const _LoggerDemo();
 
   @override
   Widget build(BuildContext context) {
-    return Text('Open console for Talker / BlocObserver logs.');
+    return const Text('Global handlers installed in main().');
   }
 }

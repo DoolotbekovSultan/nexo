@@ -1,0 +1,27 @@
+name: nexo_cli
+description: >-
+  CLI generator for Nexo-based Clean Architecture in Flutter apps.
+  Scaffolds feature folders with Bloc or Cubit, data/domain layers, and tests.
+version: 0.1.0
+repository: https://github.com/yourname/nexo
+homepage: https://github.com/yourname/nexo
+
+environment:
+  sdk: ^3.11.3
+
+topics:
+  - cli
+  - codegen
+  - flutter
+  - architecture
+
+dependencies:
+  args: ^2.7.0
+  path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0
+
+executables:
+  nexo_cli: nexo_cli

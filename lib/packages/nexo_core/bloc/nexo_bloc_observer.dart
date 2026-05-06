@@ -1,10 +1,12 @@
 import 'package:bloc/bloc.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
 import 'package:nexo/packages/nexo_errors/failure_mapper_extension.dart';
+import 'package:nexo/packages/nexo_errors/nexo_crash_reporter.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
 class NexoBlocObserver extends BlocObserver {
   final NexoLogger _logger;
+  final NexoCrashReporter? _crashReporter;
 
   final bool logLifecycle;
   final bool logEvents;
@@ -16,15 +18,16 @@ class NexoBlocObserver extends BlocObserver {
   /// Можно фильтровать конкретные Bloc/Cubit
   final bool Function(BlocBase bloc)? shouldLogBloc;
 
-  const NexoBlocObserver(
+  NexoBlocObserver(
     this._logger, {
+    NexoCrashReporter? crashReporter,
     this.logLifecycle = true,
     this.logEvents = true,
     this.logChanges = true,
     this.logErrors = true,
     this.maxLogLength = 1000,
     this.shouldLogBloc,
-  });
+  }) : _crashReporter = crashReporter;
 
   String _blocName(BlocBase bloc) => bloc.runtimeType.toString();
 
@@ -132,6 +135,19 @@ class NexoBlocObserver extends BlocObserver {
         stackTrace: stackTrace,
       );
     });
+
+    try {
+      final reporter = _crashReporter;
+      if (reporter != null) {
+        if (error is Failure) {
+          reporter.recordFailure(error, stackTrace: stackTrace);
+        } else {
+          reporter.recordError(error, stackTrace);
+        }
+      }
+    } catch (_) {
+      // репортёр не должен ломать BLoC
+    }
 
     super.onError(bloc, error, stackTrace);
   }

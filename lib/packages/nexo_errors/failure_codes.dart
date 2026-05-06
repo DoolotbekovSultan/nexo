@@ -21,8 +21,7 @@ String failureCode(Failure failure) {
     PlatformAppFailure(:final type) => 'platform.${_snake(type.name)}',
     FileAppFailure(:final type) => 'file.${_snake(type.name)}',
     LocationAppFailure(:final type) => 'location.${_snake(type.name)}',
-    NotificationAppFailure(:final type) =>
-      'notification.${_snake(type.name)}',
+    NotificationAppFailure(:final type) => 'notification.${_snake(type.name)}',
     PaymentAppFailure(:final type) => 'payment.${_snake(type.name)}',
     SyncAppFailure(:final type) => 'sync.${_snake(type.name)}',
     UnknownAppFailure() => 'unknown',

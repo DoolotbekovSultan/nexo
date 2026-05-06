@@ -8,6 +8,8 @@ export 'package:nexo/packages/nexo_errors/failure_presenter.dart';
 export 'package:nexo/packages/nexo_errors/failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/failure_mapper_extension.dart';
 export 'package:nexo/packages/nexo_errors/nexo_crash_reporter.dart';
+export 'package:nexo/packages/nexo_errors/nexo_flutter_errors.dart';
+export 'package:nexo/packages/nexo_errors/collecting_nexo_crash_reporter.dart';
 export 'package:nexo/packages/nexo_errors/localization/failure_user_message_catalog.dart';
 export 'package:nexo/packages/nexo_errors/localization/failure_user_messages_en.dart';
 export 'package:nexo/packages/nexo_errors/localization/failure_user_messages_ru.dart';

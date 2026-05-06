@@ -462,7 +462,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.3-beta.1"
+    version: "0.0.4-beta.2"
   objective_c:
     dependency: transitive
     description:

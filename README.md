@@ -2,7 +2,7 @@
 
 Модульный набор утилит для Flutter-приложений: слой **UseCase**, единая модель **Failure**, маппинг ошибок, **Bloc/Cubit**-обёртки, **Dio** (клиент и интерцепторы), базовые **data source**-ы и **логирование**.
 
-**Версия:** `0.0.3-beta.1`  
+**Версия:** `0.0.4-beta.2`  
 **SDK:** Dart `^3.11.3`, Flutter `>=1.17.0`
 
 ## Установка
@@ -71,6 +71,8 @@ failure.localizedMessage(const EnFailureUserMessages());
 - **`fetchCacheThenNetwork`** / **`fetchNetworkThenCache`** — минимальный offline-first без лишних абстракций.
 - **`FailurePresenter`** — `snackbarMessage`, `dialogTitle`, `dialogBody`, `technicalCode` (тонкий UI-слой; при необходимости замените своим классом в приложении).
 - **`NexoCrashReporter`** + **`NoOpNexoCrashReporter`** — точка расширения для Crashlytics/Sentry.
+- **`NexoFlutterErrors`** — `install` для `FlutterError.onError` и `PlatformDispatcher.instance.onError`, плюс **`runAppInZone`** для `runZonedGuarded` (лог + опциональный `NexoCrashReporter`, без UI). Внутри `runAppInZone` первым вызывайте **`WidgetsFlutterBinding.ensureInitialized`**, затем `runApp`, иначе будет zone mismatch.
+- **`CollectingNexoCrashReporter`** — накопление ошибок в памяти (тесты).
 - **`NexoRequestIdInterceptor`** — заголовок **`x-request-id`** и лог id на response/error.
 
 **Сознательно не добавлялись** (чтобы не раздувать пакет): полноценный debug-overlay, жёсткий `NexoEnvironment` с пресетами URL (лучше в приложении), разбиение на несколько pub-пакетов без запроса на миграцию.
@@ -174,7 +176,11 @@ class UserCubit extends NexoCubit<UserState> {
 }
 
 // 4. BlocObserver
-Bloc.observer = NexoBlocObserver(logger, shouldLogBloc: (b) => b is UserCubit);
+Bloc.observer = NexoBlocObserver(
+  logger,
+  crashReporter: const NoOpNexoCrashReporter(),
+  shouldLogBloc: (b) => b is UserCubit,
+);
 ```
 
 ## Пример приложения

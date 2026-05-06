@@ -13,16 +13,16 @@ void main() {
   test(
     'fetchCacheThenNetwork loads network and saves when cache miss',
     () async {
-    int? saved;
-    final v = await fetchCacheThenNetwork(
-      loadCache: () async => null,
-      loadNetwork: () async => 42,
-      saveCache: (x) async {
-        saved = x;
-      },
-    );
-    expect(v, 42);
-    expect(saved, 42);
+      int? saved;
+      final v = await fetchCacheThenNetwork(
+        loadCache: () async => null,
+        loadNetwork: () async => 42,
+        saveCache: (x) async {
+          saved = x;
+        },
+      );
+      expect(v, 42);
+      expect(saved, 42);
     },
   );
 
