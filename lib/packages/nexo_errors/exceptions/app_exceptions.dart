@@ -53,7 +53,7 @@ final class StorageAppException implements Exception {
 }
 
 final class DatabaseAppException implements Exception {
-  final DatabaseFailure type;
+  final DatabaseFailure type; 
   final String? message;
 
   const DatabaseAppException(this.type, {this.message});
