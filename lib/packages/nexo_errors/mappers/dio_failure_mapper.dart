@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 
 import '../failure.dart';
@@ -9,6 +7,7 @@ import '../types/network_failure.dart';
 import '../types/parse_failure.dart';
 import '../types/validation_failure.dart';
 import 'failure_sub_mapper.dart';
+import 'platform_exceptions.dart';
 
 final class DioFailureMapper implements FailureSubMapper {
   const DioFailureMapper();
@@ -21,6 +20,7 @@ final class DioFailureMapper implements FailureSubMapper {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
         return const Failure.network(type: NetworkFailure.timeout);
 
       case DioExceptionType.badCertificate:
@@ -32,8 +32,8 @@ final class DioFailureMapper implements FailureSubMapper {
       case DioExceptionType.connectionError:
         final inner = error.error;
 
-        if (inner is SocketException) {
-          return _mapSocketException(inner);
+        if (PlatformExceptions.isSocketException(inner)) {
+          return _mapSocketMessage(PlatformExceptions.socketMessage(inner));
         }
 
         final raw = '${error.message} ${inner ?? ''}'.toLowerCase();
@@ -69,11 +69,12 @@ final class DioFailureMapper implements FailureSubMapper {
       case DioExceptionType.unknown:
         final inner = error.error;
 
-        if (inner is SocketException) {
-          return _mapSocketException(inner);
+        if (PlatformExceptions.isSocketException(inner)) {
+          return _mapSocketMessage(PlatformExceptions.socketMessage(inner));
         }
 
-        if (inner is HandshakeException || inner is TlsException) {
+        if (PlatformExceptions.isHandshakeException(inner) ||
+            PlatformExceptions.isTlsException(inner)) {
           return const Failure.network(type: NetworkFailure.badCertificate);
         }
 
@@ -136,8 +137,8 @@ final class DioFailureMapper implements FailureSubMapper {
     );
   }
 
-  Failure _mapSocketException(SocketException error) {
-    final message = error.message.toLowerCase();
+  Failure _mapSocketMessage(String? socketMessage) {
+    final message = socketMessage?.toLowerCase() ?? '';
 
     if (_containsAny(message, const ['timed out', 'timeout'])) {
       return const Failure.network(type: NetworkFailure.timeout);

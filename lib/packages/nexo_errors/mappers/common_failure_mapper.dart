@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import '../failure.dart';
 import '../types/http_failure.dart';
@@ -8,6 +7,7 @@ import '../types/parse_failure.dart';
 import '../types/platform_failure.dart';
 import '../types/validation_failure.dart';
 import 'failure_sub_mapper.dart';
+import 'platform_exceptions.dart';
 
 final class CommonFailureMapper implements FailureSubMapper {
   const CommonFailureMapper();
@@ -16,17 +16,25 @@ final class CommonFailureMapper implements FailureSubMapper {
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is Failure) return error;
 
+    // `dart:io` types are probed, not pattern-matched: they do not exist on
+    // the web and the probes keep evaluation order identical to the previous
+    // switch.
+    if (PlatformExceptions.isSocketException(error)) {
+      return _mapSocketMessage(PlatformExceptions.socketMessage(error));
+    }
+    if (error is TimeoutException) {
+      return const Failure.network(type: NetworkFailure.timeout);
+    }
+    if (PlatformExceptions.isHandshakeException(error) ||
+        PlatformExceptions.isTlsException(error)) {
+      return const Failure.network(type: NetworkFailure.badCertificate);
+    }
+    if (error is FormatException) return _mapFormatException(error);
+    if (PlatformExceptions.isHttpException(error)) {
+      return _mapHttpMessage(PlatformExceptions.httpMessage(error) ?? '');
+    }
+
     return switch (error) {
-      SocketException e => _mapSocketException(e),
-      TimeoutException _ => const Failure.network(type: NetworkFailure.timeout),
-      HandshakeException _ => const Failure.network(
-        type: NetworkFailure.badCertificate,
-      ),
-      TlsException _ => const Failure.network(
-        type: NetworkFailure.badCertificate,
-      ),
-      FormatException e => _mapFormatException(e),
-      HttpException e => _mapHttpException(e),
       UnsupportedError e => Failure.platform(
         type: PlatformFailure.notSupported,
         details: e.message,
@@ -57,8 +65,8 @@ final class CommonFailureMapper implements FailureSubMapper {
     };
   }
 
-  Failure _mapSocketException(SocketException error) {
-    final message = error.message.toLowerCase();
+  Failure _mapSocketMessage(String? socketMessage) {
+    final message = socketMessage?.toLowerCase() ?? '';
 
     if (_containsAny(message, const ['timed out', 'timeout'])) {
       return const Failure.network(type: NetworkFailure.timeout);
@@ -139,64 +147,64 @@ final class CommonFailureMapper implements FailureSubMapper {
     );
   }
 
-  Failure _mapHttpException(HttpException error) {
-    final raw = error.message.toLowerCase();
+  Failure _mapHttpMessage(String message) {
+    final raw = message.toLowerCase();
 
     if (_containsAny(raw, const ['401', 'unauthorized'])) {
       return Failure.http(
         type: HttpFailure.unauthorized,
-        message: error.message,
+        message: message,
       );
     }
 
     if (_containsAny(raw, const ['403', 'forbidden'])) {
-      return Failure.http(type: HttpFailure.forbidden, message: error.message);
+      return Failure.http(type: HttpFailure.forbidden, message: message);
     }
 
     if (_containsAny(raw, const ['404', 'not found'])) {
-      return Failure.http(type: HttpFailure.notFound, message: error.message);
+      return Failure.http(type: HttpFailure.notFound, message: message);
     }
 
     if (_containsAny(raw, const ['408', 'timeout'])) {
       return Failure.http(
         type: HttpFailure.requestTimeout,
-        message: error.message,
+        message: message,
       );
     }
 
     if (_containsAny(raw, const ['429', 'too many requests'])) {
       return Failure.http(
         type: HttpFailure.tooManyRequests,
-        message: error.message,
+        message: message,
       );
     }
 
     if (_containsAny(raw, const ['500', 'internal server error'])) {
       return Failure.http(
         type: HttpFailure.internalServerError,
-        message: error.message,
+        message: message,
       );
     }
 
     if (_containsAny(raw, const ['502', 'bad gateway'])) {
-      return Failure.http(type: HttpFailure.badGateway, message: error.message);
+      return Failure.http(type: HttpFailure.badGateway, message: message);
     }
 
     if (_containsAny(raw, const ['503', 'service unavailable'])) {
       return Failure.http(
         type: HttpFailure.serviceUnavailable,
-        message: error.message,
+        message: message,
       );
     }
 
     if (_containsAny(raw, const ['504', 'gateway timeout'])) {
       return Failure.http(
         type: HttpFailure.gatewayTimeout,
-        message: error.message,
+        message: message,
       );
     }
 
-    return Failure.http(type: HttpFailure.unknown, message: error.message);
+    return Failure.http(type: HttpFailure.unknown, message: message);
   }
 
   bool _containsAny(String source, List<String> patterns) {

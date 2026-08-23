@@ -1,120 +1,125 @@
-import 'dart:io';
-
 import '../failure.dart';
 import '../types/file_failure.dart';
 import '../types/storage_failure.dart';
 import 'failure_sub_mapper.dart';
+import 'platform_exceptions.dart';
 
 final class FileSystemFailureMapper implements FailureSubMapper {
   const FileSystemFailureMapper();
 
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
-    return switch (error) {
-      PathNotFoundException e => _mapPathNotFound(e),
-      FileSystemException e => _mapFileSystem(e),
-      _ => null,
-    };
+    final details = PlatformExceptions.fileSystemDetails(error);
+    if (details == null) return null;
+
+    if (PlatformExceptions.isPathNotFoundException(error)) {
+      return _mapPathNotFound(details.path, details.message);
+    }
+    return _mapFileSystem(details.path, details.message);
   }
 
-  Failure _mapPathNotFound(PathNotFoundException error) {
-    final path = error.path?.toLowerCase();
+  Failure _mapPathNotFound(String? path, String message) {
+    final loweredPath = path?.toLowerCase();
 
-    if (_looksLikeStoragePath(path)) {
+    if (_looksLikeStoragePath(loweredPath)) {
       return Failure.storage(
         type: StorageFailure.notFound,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
     return Failure.file(
       type: FileFailure.notFound,
-      path: error.path,
-      message: error.message,
+      path: path,
+      message: message,
     );
   }
 
-  Failure _mapFileSystem(FileSystemException error) {
-    final path = error.path?.toLowerCase();
-    final message = error.message.toLowerCase();
+  Failure _mapFileSystem(String? path, String message) {
+    final loweredPath = path?.toLowerCase();
+    final loweredMessage = message.toLowerCase();
 
-    if (_looksLikeStoragePath(path)) {
-      return _mapStorageFailure(error, message);
+    if (_looksLikeStoragePath(loweredPath)) {
+      return _mapStorageFailure(path, message, loweredMessage);
     }
 
     return Failure.file(
-      type: _mapFileType(message),
-      path: error.path,
-      message: error.message,
+      type: _mapFileType(loweredMessage),
+      path: path,
+      message: message,
     );
   }
 
-  Failure _mapStorageFailure(FileSystemException error, String message) {
-    if (_containsAny(message, const ['permission denied'])) {
+  Failure _mapStorageFailure(
+    String? path,
+    String message,
+    String loweredMessage,
+  ) {
+    if (_containsAny(loweredMessage, const ['permission denied'])) {
       return Failure.storage(
         type: StorageFailure.permissionDenied,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
-    if (_containsAny(message, const ['no space left', 'disk full'])) {
+    if (_containsAny(loweredMessage, const ['no space left', 'disk full'])) {
       return Failure.storage(
         type: StorageFailure.outOfSpace,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
-    if (_containsAny(message, const ['corrupt', 'corrupted'])) {
+    if (_containsAny(loweredMessage, const ['corrupt', 'corrupted'])) {
       return Failure.storage(
         type: StorageFailure.corrupted,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
-    if (_containsAny(message, const [
+    if (_containsAny(loweredMessage, const [
       'not found',
       'no such file',
       'cannot find',
     ])) {
       return Failure.storage(
         type: StorageFailure.notFound,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
-    if (_containsAny(message, const ['read'])) {
+    if (_containsAny(loweredMessage, const ['read'])) {
       return Failure.storage(
         type: StorageFailure.readError,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
-    if (_containsAny(message, const ['write', 'save'])) {
+    if (_containsAny(loweredMessage, const ['write', 'save'])) {
       return Failure.storage(
         type: StorageFailure.writeError,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
-    if (_containsAny(message, const ['delete', 'remove'])) {
+    if (_containsAny(loweredMessage, const ['delete', 'remove'])) {
       return Failure.storage(
         type: StorageFailure.deleteError,
-        key: error.path,
-        message: error.message,
+        key: path,
+        message: message,
       );
     }
 
     return Failure.storage(
       type: StorageFailure.unavailable,
-      key: error.path,
-      message: error.message,
+      key: path,
+      message: message,
     );
   }
 

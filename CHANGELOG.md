@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.4-beta.4
+
+- **Web-совместимость `nexo_errors`**: мапперы больше не импортируют `dart:io` напрямую.
+  Новые probe-хелперы (`platform_exceptions.dart`) через conditional imports определяют
+  `SocketException` / `HandshakeException` / `TlsException` / `HttpException` /
+  `FileSystemException` на VM и возвращают «не совпадает» на вебе, где эти типы недоступны.
+- **`DioFailureMapper`**: добавлен кейс `DioExceptionType.transformTimeout` (появился в dio 5.10;
+  dart2js требует исчерпывающий switch по enum — без кейса веб-сборка падала).
+- Констрейнт dio поднят до `^5.10.0`.
+
 ## 0.0.4-beta.3
 
 - Metadata refresh and republish for current stable Flutter/Dart compatibility.
