@@ -1,8 +1,8 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/packages/nexo_core/usecase/nexo_usecase.dart';
 import 'package:nexo/packages/nexo_core/usecase/nexo_usecase_retry.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
+import 'package:nexo/packages/nexo_errors/result.dart';
 import 'package:nexo/packages/nexo_errors/types/network_failure.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 

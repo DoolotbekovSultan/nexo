@@ -47,8 +47,8 @@ abstract class NexoCubit<S> extends Cubit<S>
       final result = await action();
       if (!isClosed) {
         result.fold(
-          (failure) => emit(onError(failure)),
-          (data) => emit(onSuccess(data)),
+          onFailure: (failure) => emit(onError(failure)),
+          onSuccess: (data) => emit(onSuccess(data)),
         );
       }
     } catch (e, s) {
@@ -118,8 +118,8 @@ abstract class NexoCubit<S> extends Cubit<S>
           if (isClosed) return;
 
           result.fold(
-            (failure) => emit(onError(failure)),
-            (data) => emit(onData(data)),
+            onFailure: (failure) => emit(onError(failure)),
+            onSuccess: (data) => emit(onData(data)),
           );
         },
         onError: (Object error, StackTrace stackTrace) {

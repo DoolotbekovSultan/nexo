@@ -20,11 +20,11 @@ extension NexoUseCaseRetryX<T, Params> on NexoUseCase<T, Params> {
     Result<T>? last;
     for (var i = 0; i < maxAttempts; i++) {
       last = await call(params);
-      if (last.isRight()) return last;
+      if (last.isSuccess) return last;
 
       final failure = last.fold<Failure>(
-        (l) => l,
-        (_) => throw StateError('expected Left'),
+        onFailure: (f) => f,
+        onSuccess: (_) => throw StateError('expected failure'),
       );
       final canRetry = retryIf?.call(failure) ?? failure.isRetryable;
       if (!canRetry || i == maxAttempts - 1) {

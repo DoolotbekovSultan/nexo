@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.6-beta.0
+
+- **Breaking**: `Result<T>` — собственный sealed-тип вместо `Either<Failure, T>` из dartz:
+  - те же короткие имена веток `Right<T>` / `Left<T>`; фабрики-алиасы `Result.success(value)` / `Result.failure(failure)`;
+  - именованный `fold(onFailure:, onSuccess:)` — порядок веток больше нельзя перепутать;
+  - хелперы `isSuccess` / `isFailure`, `dataOrNull` / `failureOrNull`, `map`, `getOrElse`;
+  - исчерпывающий паттерн-матчинг по sealed-классу (`switch (result) { case Right(:final value) ... }`);
+  - value-equality у обеих веток (удобно в тестах: `expect(result, const Right(42))`);
+  - зависимость `dartz` удалена, её типы (`Either`, `Left`, `Right` из dartz) больше не экспортируются.
+  - Миграция: позиционный `fold((l), (r))` → `fold(onFailure:, onSuccess:)`; остальной код на `Right`/`Left` совместим.
+- Новый модуль **`nexo_testing`** (`lib/nexo_testing.dart`) — матчеры для тестов на базе пакета `matcher`:
+  - `isSuccess([value])` / `isFailure(code:)` для `Result`;
+  - `failureWithCode(code)` / `failureWithUserMessage(text)` для `Failure`;
+  - расширения `dataOrThrow()` / `failureOrThrow()`.
+- `nexo_ui`: новые виджеты **`NexoAsyncStateBuilder`** (маппинг `NexoAsyncState` на UI с дефолтами idle/loading/failure) и **`NexoFailureView`** (иконка + `userMessage` + опциональный технический код + кнопка «Повторить»).
+
 ## 0.0.5-beta.1
 
 - Новый модуль **`nexo_ui`** (ранее WIP за `.gitignore`, теперь часть публичного API):

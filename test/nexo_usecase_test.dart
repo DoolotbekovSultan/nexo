@@ -1,6 +1,6 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/packages/nexo_core/usecase/nexo_usecase.dart';
+import 'package:nexo/packages/nexo_errors/result.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
 class _FakeLogger implements NexoLogger {
@@ -29,16 +29,16 @@ class _AddOne extends NexoUseCase<int, int> {
 }
 
 void main() {
-  test('NexoUseCase returns Right on success', () async {
+  test('NexoUseCase returns success on happy path', () async {
     final uc = _AddOne(_FakeLogger());
     final r = await uc(41);
     expect(r, const Right(42));
   });
 
-  test('NexoUseCase returns Left on thrown exception', () async {
+  test('NexoUseCase returns failure on thrown exception', () async {
     final uc = _Throwing(_FakeLogger());
     final r = await uc(0);
-    expect(r.isLeft(), isTrue);
+    expect(r.isFailure, isTrue);
   });
 }
 

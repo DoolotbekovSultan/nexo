@@ -47,8 +47,8 @@ abstract class NexoBloc<Event, S> extends Bloc<Event, S> with FailureSupport {
       if (emit.isDone) return;
 
       result.fold(
-        (failure) => emit(onError(failure)),
-        (data) => emit(onSuccess(data)),
+        onFailure: (failure) => emit(onError(failure)),
+        onSuccess: (data) => emit(onSuccess(data)),
       );
     } catch (e, s) {
       if (!emit.isDone) {
@@ -97,8 +97,8 @@ abstract class NexoBloc<Event, S> extends Bloc<Event, S> with FailureSupport {
         stream(),
         onData: (result) {
           return result.fold(
-            (failure) => onError(failure),
-            (data) => onData(data),
+            onFailure: (failure) => onError(failure),
+            onSuccess: (data) => onData(data),
           );
         },
         onError: (error, stackTrace) {
