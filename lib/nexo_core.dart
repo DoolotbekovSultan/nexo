@@ -26,6 +26,7 @@ export 'package:nexo/packages/nexo_core/network/interceptors/nexo_logging_interc
 export 'package:nexo/packages/nexo_core/network/interceptors/nexo_request_id_interceptor.dart';
 export 'package:nexo/packages/nexo_core/network/interceptors/nexo_retry_interceptor.dart';
 export 'package:nexo/packages/nexo_core/network/offline_fetch.dart';
+export 'package:nexo/packages/nexo_core/sync/nexo_outbox.dart';
 export 'package:nexo/packages/nexo_core/usecase/no_params.dart';
 export 'package:nexo/packages/nexo_core/usecase/nexo_stream_usecase.dart';
 export 'package:nexo/packages/nexo_core/usecase/nexo_usecase.dart';

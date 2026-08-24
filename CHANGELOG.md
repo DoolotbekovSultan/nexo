@@ -19,6 +19,7 @@
 - `nexo_ui`: **`showFailureSnackBar`** / **`showFailureDialog`** (тексты из `FailurePresenter`, опциональный retry), **`NexoEmptyView`** (заглушка пустого состояния с действием) и **`NexoSkeletonLoader` / `NexoSkeletonList`** (пульсирующие заглушки загрузки).
 - `nexo_errors`: **requestId в ошибках** — `DioFailureMapper` теперь прокидывает `x-request-id` (ключ `nexoRequestIdExtraKey` из `extra`) в поля `requestId` у `NetworkAppFailure` / `HttpAppFailure`, чтобы связывать ошибки UI с логами и сервером; `NexoRequestIdInterceptor.extraRequestIdKey` использует тот же общий ключ.
 - `nexo_core`: **безопасность логов** — `NexoLoggingInterceptor` маскирует чувствительные query-параметры URL (`/items?access_token=…`) во всех фазах (запрос / ответ / ошибка); раньше токен мог попасть в лог открытым.
+- `nexo_core`: новый **`NexoOutbox`** — очередь офлайн-мутаций (паттерн outbox): `enqueue()` мгновенно кладёт действие в очередь (для UI это уже «успех»), `flush()` последовательно доставляет операции строго в порядке постановки и останавливается на первой ошибке, возвращая маппнутый `Failure` (`OutboxFlushResult`). Хранилище подключается через интерфейс `OutboxStore` (готовая `InMemoryOutboxStore`; для продакшена — реализация поверх Hive / Isar / Drift через готовые датасорсы пакета). Поле `OutboxEntry.id` предназначено для ключа идемпотентности на сервере.
 
 ## 0.0.5-beta.1
 
