@@ -1,5 +1,41 @@
 import 'package:nexo/packages/nexo_errors/failure.dart';
 
+/// Уровень важности [NexoBreadcrumb] — для фильтрации в Sentry / Crashlytics.
+enum NexoBreadcrumbLevel { debug, info, warning, error }
+
+/// «Хлебная крошка» — событие из жизни приложения до сбоя.
+///
+/// Лента последних крошек прикладывается к краш-репорту и показывает,
+/// *как* приложение пришло к ошибке: навигация, HTTP-запросы, ошибки
+/// блоков, действия пользователя.
+final class NexoBreadcrumb {
+  NexoBreadcrumb(
+    this.message, {
+    this.category = 'app',
+    this.level = NexoBreadcrumbLevel.info,
+    Map<String, Object?>? data,
+  }) : data = data == null ? null : Map.unmodifiable(data),
+       timestamp = DateTime.now();
+
+  /// Текст события («открыл экран Checkout», «POST /orders → 401»).
+  final String message;
+
+  /// Категория: `nav`, `http`, `usecase`, `bloc`, `ui`, …
+  final String category;
+
+  /// Важность события.
+  final NexoBreadcrumbLevel level;
+
+  /// Дополнительные структурированные данные (id запроса, код ошибки…).
+  final Map<String, Object?>? data;
+
+  /// Момент события; проставляется автоматически.
+  final DateTime timestamp;
+
+  @override
+  String toString() => '$timestamp [$category] $message';
+}
+
 /// Абстракция для Crashlytics, Sentry и т.п. Реализации подключаются в приложении.
 abstract class NexoCrashReporter {
   /// Зафиксировать уже смапленный [Failure] (например из UseCase / Bloc).
@@ -15,6 +51,12 @@ abstract class NexoCrashReporter {
     StackTrace stackTrace, {
     Map<String, Object?>? context,
   });
+
+  /// Добавить событие в ленту breadcrumbs, прикладываемую к краш-репортам.
+  ///
+  /// Вызывайте из навигации, HTTP-слоя и UI; [NexoBlocObserver] пишет
+  /// ошибки блоков автоматически.
+  void recordBreadcrumb(NexoBreadcrumb breadcrumb);
 }
 
 /// Заглушка по умолчанию.
@@ -34,4 +76,7 @@ final class NoOpNexoCrashReporter implements NexoCrashReporter {
     StackTrace stackTrace, {
     Map<String, Object?>? context,
   }) {}
+
+  @override
+  void recordBreadcrumb(NexoBreadcrumb breadcrumb) {}
 }

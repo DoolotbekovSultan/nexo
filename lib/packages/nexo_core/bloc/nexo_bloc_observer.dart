@@ -139,6 +139,14 @@ class NexoBlocObserver extends BlocObserver {
     try {
       final reporter = _crashReporter;
       if (reporter != null) {
+        reporter.recordBreadcrumb(
+          NexoBreadcrumb(
+            '${_blocName(bloc)}: ${failure.code}',
+            category: 'bloc',
+            level: NexoBreadcrumbLevel.error,
+            data: {'failureCode': failure.code},
+          ),
+        );
         if (error is Failure) {
           reporter.recordFailure(error, stackTrace: stackTrace);
         } else {
