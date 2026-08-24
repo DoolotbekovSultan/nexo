@@ -15,6 +15,7 @@
   - `failureWithCode(code)` / `failureWithUserMessage(text)` для `Failure`;
   - расширения `dataOrThrow()` / `failureOrThrow()`.
 - `nexo_ui`: новые виджеты **`NexoAsyncStateBuilder`** (маппинг `NexoAsyncState` на UI с дефолтами idle/loading/failure) и **`NexoFailureView`** (иконка + `userMessage` + опциональный технический код + кнопка «Повторить»).
+- `nexo_core`: новый **`NexoAsyncCubit<T>`** — готовый кубит типового экрана: реализуйте `fetch()`, вызывайте `load()` / `retry()` / `refresh()` (тихое обновление без спиннера), состояние — `NexoAsyncState`; встроенная защита от устаревших ответов и колбэк `onFailure`.
 
 ## 0.0.5-beta.1
 

@@ -4,6 +4,7 @@ library;
 export 'package:flutter_bloc/flutter_bloc.dart';
 export 'package:nexo/packages/nexo_core/bloc/bloc_transformers.dart';
 export 'package:nexo/packages/nexo_core/bloc/failure_support.dart';
+export 'package:nexo/packages/nexo_core/bloc/nexo_async_cubit.dart';
 export 'package:nexo/packages/nexo_core/bloc/nexo_bloc.dart';
 export 'package:nexo/packages/nexo_core/bloc/nexo_bloc_observer.dart';
 export 'package:nexo/packages/nexo_core/bloc/nexo_cubit.dart';
