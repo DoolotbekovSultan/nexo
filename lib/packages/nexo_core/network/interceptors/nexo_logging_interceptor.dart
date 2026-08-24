@@ -57,9 +57,10 @@ class NexoLoggingInterceptor extends Interceptor {
     }
 
     _safeLog(() {
+      final uri = _sanitizeUri(options);
       final buffer = StringBuffer()
         ..writeln('HTTP REQUEST')
-        ..writeln('${options.method} ${options.uri}');
+        ..writeln('${options.method} $uri');
 
       if (logRequestHeaders) {
         buffer
@@ -93,7 +94,7 @@ class NexoLoggingInterceptor extends Interceptor {
 
       final buffer = StringBuffer()
         ..writeln('HTTP RESPONSE')
-        ..writeln('${options.method} ${options.uri}')
+        ..writeln('${options.method} ${_sanitizeUri(options)}')
         ..writeln('Status: ${response.statusCode}')
         ..writeln('Time: ${_formatDuration(duration)}');
 
@@ -130,10 +131,11 @@ class NexoLoggingInterceptor extends Interceptor {
 
     _safeLog(() {
       final duration = _getDuration(options);
+      final uri = _sanitizeUri(options);
 
       final buffer = StringBuffer()
         ..writeln('HTTP ERROR')
-        ..writeln('${options.method} ${options.uri}')
+        ..writeln('${options.method} $uri')
         ..writeln('Status: ${err.response?.statusCode}')
         ..writeln('Time: ${_formatDuration(duration)}')
         ..writeln('Type: ${err.type}')
@@ -181,6 +183,22 @@ class NexoLoggingInterceptor extends Interceptor {
 
   Map<String, String> _normalizeHeaders(Headers headers) {
     return headers.map.map((key, value) => MapEntry(key, value.join(', ')));
+  }
+
+  /// Пересобирает URI, маскируя чувствительные query-параметры
+  /// (`/items?access_token=…`), чтобы токены не попадали в логи.
+  Uri _sanitizeUri(RequestOptions options) {
+    final uri = options.uri;
+    if (uri.queryParameters.isEmpty) return uri;
+
+    final filtered = <String, String>{
+      for (final entry in uri.queryParameters.entries)
+        entry.key: _isSensitiveField(entry.key)
+            ? '***FILTERED***'
+            : entry.value,
+    };
+
+    return uri.replace(queryParameters: filtered);
   }
 
   dynamic _filterSensitiveData(dynamic data) {
