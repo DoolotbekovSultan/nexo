@@ -24,6 +24,7 @@
 - `example`: демо-галерея из четырёх вкладок — асинхронный экран (`NexoAsyncCubit` + `NexoAsyncStateBuilder` + skeleton/empty/failure), форма на `NexoValidators`, feedback-виджеты (`showFailureSnackBar` / `showFailureDialog`, локализация, заглушки) и живая очередь `NexoOutbox` с офлайн-переключателем.
 - `nexo_errors`: **breadcrumbs** — лента последних событий перед сбоем: новая модель `NexoBreadcrumb` (категория, уровень, данные, timestamp) и метод `recordBreadcrumb` в `NexoCrashReporter`; `CollectingNexoCrashReporter` держит кольцевой буфер (`maxBreadcrumbs`, по умолчанию 50) и отдаёт снимок через `breadcrumbTrail`; `NexoBlocObserver` пишет ошибки блоков в ленту автоматически.
   **Breaking** для своих реализаций `NexoCrashReporter`: добавьте пустой `recordBreadcrumb`.
+- Обновлены зависимости: `flutter_secure_storage` `^9.2.4` → `^11.0.0` (без изменений в API датасорса), dev-зависимость `freezed` `^3.2.5` → `^4.0.0` с регенерацией `failure.freezed.dart`; остальные пакеты — минорные апгрейды.
 
 ## 0.0.5-beta.1
 

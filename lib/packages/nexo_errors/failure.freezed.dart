@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'failure.dart';
@@ -9,6 +9,7 @@ part of 'failure.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -327,7 +328,7 @@ as String?,
 
 
 class HttpAppFailure extends Failure {
-  const HttpAppFailure({required this.type, this.statusCode, this.message, this.requestId, final  Map<String, List<String>> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
+  const HttpAppFailure({required this.type, this.statusCode, this.message, this.requestId,  Map<String, List<String>> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
   
 
  final  HttpFailure type;
@@ -475,7 +476,7 @@ as String?,
 
 
 class ValidationAppFailure extends Failure {
-  const ValidationAppFailure({required this.type, this.field, this.message, final  Map<String, List<String>> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
+  const ValidationAppFailure({required this.type, this.field, this.message,  Map<String, List<String>> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
   
 
  final  ValidationFailure type;
