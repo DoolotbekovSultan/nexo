@@ -1,8 +1,10 @@
 # nexo
 
-Модульный набор утилит для Flutter-приложений: слой **UseCase**, единая модель **Failure**, маппинг ошибок, **Bloc/Cubit**-обёртки, **Dio** (клиент и интерцепторы), базовые **data source**-ы и **логирование**.
+[![CI](https://github.com/DoolotbekovSultan/nexo/actions/workflows/ci.yml/badge.svg)](https://github.com/DoolotbekovSultan/nexo/actions/workflows/ci.yml)
 
-**Версия:** `0.0.4-beta.2`  
+Модульный набор утилит для Flutter-приложений: слой **UseCase**, собственный sealed **`Result`**, единая модель **`Failure`** с маппингом и локализацией, готовый **`NexoAsyncCubit`** и виджеты состояний, очередь офлайн-мутаций (**outbox**), валидаторы форм, **Bloc/Cubit**-обёртки, **Dio** (клиент и интерцепторы), базовые **data source**-ы, **breadcrumbs** для краш-репортов и **логирование**.
+
+**Версия:** `0.0.6-beta.0`  
 **SDK:** Dart `^3.11.3`, Flutter `>=1.17.0`
 
 ## Установка
@@ -34,10 +36,11 @@ dart run build_runner build --delete-conflicting-outputs
 
 | Папка | Назначение |
 |--------|------------|
-| `nexo_core` | UseCase, StreamUseCase, Bloc/Cubit, сеть (Dio), локальные/удалённые data source, пагинация, вспомогательные блок-хелперы |
-| `nexo_errors` | `Failure` (sealed + Freezed), типизированные подтипы ошибок, `FailureMapper`, подмапперы (Dio, Hive, Isar, и т.д.) |
+| `nexo_core` | UseCase, `NexoAsyncCubit`, Bloc/Cubit, сеть (Dio), локальные/удалённые data source, пагинация, outbox-очередь, валидаторы форм |
+| `nexo_errors` | `Failure` (sealed + Freezed), подтипы ошибок, `Result`, мапперы (Dio, Hive, Isar, Drift, Firebase…), breadcrumbs, crash-reporter |
 | `nexo_logger` | Абстракция `NexoLogger`, адаптер под **Talker** |
-| `nexo_ui` | UI-утилиты: спейсеры-гэпы (ScreenUtil), цепочки обёрток виджетов, `NexoButton`, `NexoCard` |
+| `nexo_ui` | Виджеты состояний (`NexoAsyncStateBuilder`, `NexoFailureView`, `NexoEmptyView`, скелетоны), feedback (snackbar/диалоги), кнопки/карточки, гэпы |
+| `nexo_testing` | Матчеры тестов: `isSuccess` / `isFailure`, `failureWithCode`, расширения `dataOrThrow()` |
 
 Рекомендуемые **barrel-импорты**:
 
@@ -47,6 +50,8 @@ import 'package:nexo/nexo.dart'; // всё сразу
 import 'package:nexo/nexo_core.dart';
 import 'package:nexo/nexo_errors.dart';
 import 'package:nexo/nexo_logger.dart';
+import 'package:nexo/nexo_ui.dart';
+import 'package:nexo/nexo_testing.dart'; // только в тестах
 ```
 
 Глубокие импорты по-прежнему допустимы: `package:nexo/packages/nexo_core/...`.
@@ -65,29 +70,35 @@ failure.localizedMessage(const EnFailureUserMessages());
 
 ### Ядро: `Result`, код ошибки, async-состояние
 
-- **`Result<T>`** и **`StreamResult<T>`** — typedef над `Either<Failure, T>` / потоком тех же значений. Сигнатуры **`NexoUseCase.call`**, **`NexoStreamUseCase.call`**, **`executeEither` / `subscribeEither`** в Bloc/Cubit используют `Result<T>`. Через `result.dart` реэкспортируются **`Either`**, **`Left`**, **`Right`** (отдельный `import dartz` в фичах часто не нужен).
-- **`Failure.code`** — стабильная строка (`network.no_internet`, `http.unauthorized`, при `HttpFailure.unknown` и известном статусе — `http.status_502`) для Sentry, логов и бэкенда.
-- **`NexoAsyncState<T>`** — sealed: `NexoAsyncIdle` / `NexoAsyncLoading` / `NexoAsyncSuccess` / `NexoAsyncFailure`; геттеры **`isIdle`**, **`isLoading`**, … и **`dataOrNull`**, **`failureOrNull`**.
-- **`NexoUseCase.callWithRetry`** (extension) — повтор вызова с задержкой и `retryIf` либо **`Failure.isRetryable`**.
-- **`fetchCacheThenNetwork`** / **`fetchNetworkThenCache`** — минимальный offline-first без лишних абстракций.
-- **`FailurePresenter`** — `snackbarMessage`, `dialogTitle`, `dialogBody`, `technicalCode` (тонкий UI-слой; при необходимости замените своим классом в приложении).
-- **`NexoCrashReporter`** + **`NoOpNexoCrashReporter`** — точка расширения для Crashlytics/Sentry.
-- **`NexoFlutterErrors`** — `install` для `FlutterError.onError` и `PlatformDispatcher.instance.onError`, плюс **`runAppInZone`** для `runZonedGuarded` (лог + опциональный `NexoCrashReporter`, без UI). Внутри `runAppInZone` первым вызывайте **`WidgetsFlutterBinding.ensureInitialized`**, затем `runApp`, иначе будет zone mismatch.
-- **`CollectingNexoCrashReporter`** — накопление ошибок в памяти (тесты).
-- **`NexoRequestIdInterceptor`** — заголовок **`x-request-id`** и лог id на response/error.
+- **`Result<T>`** — собственный sealed-тип (без dartz): ветки **`Right<T>` / `Left<T>`**, фабрики-алиасы `Result.success(value)` / `Result.failure(failure)`. Именованный `fold(onFailure:, onSuccess:)`, `map`, `getOrElse`, `dataOrNull` / `failureOrNull`, value-equality и **исчерпывающий паттерн-матчинг**:
+  ```dart
+  final text = switch (result) {
+    Right(:final value) => 'Данные: $value',
+    Left(:final failure) => failure.userMessage,
+  };
+  ```
+- **`Failure.code`** — стабильная строка (`network.no_internet`, `http.unauthorized`) для Sentry, логов и бэкенда; сетевые/HTTP-ошибки автоматически получают **`requestId`** из `x-request-id`.
+- **`NexoAsyncState<T>`** — sealed: `NexoAsyncIdle` / `NexoAsyncLoading` / `NexoAsyncSuccess` / `NexoAsyncFailure`; геттеры `isIdle`, `isLoading`, … и `dataOrNull`, `failureOrNull`.
+- **`NexoUseCase.callWithRetry`** — повтор вызова с экспоненциальной задержкой по `retryIf` либо `Failure.isRetryable`.
+- **`fetchCacheThenNetwork`** / **`fetchNetworkThenCache`** — минимальный offline-first.
+- **`FailurePresenter`** — тексты для snackbar / диалога; используются готовыми виджетами feedback.
+- **`NexoCrashReporter`** + **breadcrumbs** — точка расширения для Crashlytics/Sentry: `recordBreadcrumb(NexoBreadcrumb(...))` пишет событие в ленту, которая прикладывается к отчёту; ошибки блоков попадают туда автоматически через `NexoBlocObserver`.
+- **`NexoFlutterErrors`** — `install` для `FlutterError.onError` и `PlatformDispatcher.instance.onError`, плюс **`runAppInZone`** (внутри первым вызывайте `WidgetsFlutterBinding.ensureInitialized`, затем `runApp`).
+- **`CollectingNexoCrashReporter`** — накопление ошибок и кольцевой буфер крошек в памяти (тесты).
+- **`NexoRequestIdInterceptor`** — заголовок `x-request-id`, id в логах и в полях `requestId` у ошибок.
 
 **Сознательно не добавлялись** (чтобы не раздувать пакет): полноценный debug-overlay, жёсткий `NexoEnvironment` с пресетами URL (лучше в приложении), разбиение на несколько pub-пакетов без запроса на миграцию.
 
 ## Зависимости (основные)
 
 - **Состояние:** `bloc`, `flutter_bloc`, `bloc_concurrency`, `stream_transform`
-- **Функциональный стиль:** `dartz` (`Either`)
 - **Сеть:** `dio`
 - **Локальные хранилища:** `hive`, `isar`, `shared_preferences`, `flutter_secure_storage`, `path_provider`
 - **Firebase (частично):** `firebase_core`, `firebase_auth`
 - **Модели:** `freezed_annotation`, `json_annotation`
 - **Логи:** `talker`
-- **UI:** `flutter_screenutil` (возможна для адаптивных спейсеров; нативные гэпы — чистые пиксели)
+- **UI:** `flutter_screenutil` (для адаптивных спейсеров; нативные гэпы — чистые пиксели)
+- **Тесты (модуль nexo_testing):** `matcher`
 
 ## Модули и публичное API
 
@@ -122,8 +133,26 @@ failure.localizedMessage(const EnFailureUserMessages());
   - **`execute`** / **`executeEither`** — async-действие с опциональным loading, success, error.
   - **`subscribe`** / **`subscribeEither`** — подписка на потоки с маппингом ошибок в `Failure`.
 - **`NexoCubit`** дополнительно: **`SubscriptionMixin`**, отмена подписок по ключу, `close` отменяет подписки.
-- **`NexoBlocObserver`** — `BlocObserver` с логированием lifecycle / events / changes / errors через `NexoLogger`, фильтр `shouldLogBloc`, усечение длины логов.
+- **`NexoBlocObserver`** — `BlocObserver` с логированием lifecycle / events / changes / errors через `NexoLogger`, фильтр `shouldLogBloc`, усечение длины логов; ошибки блоков автоматически пишутся в breadcrumbs crash-reporter'а.
 - Вспомогательные файлы: `bloc_transformers.dart`, `optimistic_update_helper.dart`, `pagination_controller.dart`, `reconnecting_stream_service.dart`, `nexo_bloc_observer.dart`.
+
+#### `NexoAsyncCubit<T>` — типовой экран в три строки
+
+Готовый кубит «UseCase → состояние»: реализуйте `fetch()`, управляйте методами `load()` / `retry()` / `refresh()`, а состояние отображайте через `NexoAsyncStateBuilder`.
+
+```dart
+class UsersCubit extends NexoAsyncCubit<List<User>> {
+  UsersCubit(this._getUsers);
+  final GetUsersUseCase _getUsers;
+
+  @override
+  Future<Result<List<User>>> fetch() => _getUsers(NoParams());
+}
+
+context.read<UsersCubit>().load(); // -> Loading -> Success | Failure
+```
+
+Защита от устаревших ответов встроена, колбэк `onFailure` — для снекбаров вне дерева билда.
 
 ### nexo_core — Сеть
 
@@ -146,6 +175,75 @@ failure.localizedMessage(const EnFailureUserMessages());
 
 - **`PageChunk<T, Cursor>`** — страница: элементы, следующий курсор, `hasMore`.
 - **`PaginationController<T, Cursor>`** — накопление списка, `loadNext`, `reset`, `replaceAll`, защита от параллельной загрузки.
+
+### Outbox — очередь офлайн-мутаций
+
+Паттерн outbox: действие пользователя мгновенно попадает в локальную очередь (для UI это уже «успех»), а `flush()` доставляет его на сервер при появлении сети — строго в порядке постановки, с остановкой на первой ошибке.
+
+```dart
+final outbox = NexoOutbox(
+  store: InMemoryOutboxStore(), // в проде: своя реализация OutboxStore поверх Hive/Isar/Drift
+  send: (entry) => dio.post(entry.path, data: entry.payload),
+);
+
+await outbox.enqueue(path: '/posts', payload: {'title': 'Привет'});
+
+// по возврату сети или на старте приложения:
+final result = await outbox.flush();
+if (!result.isComplete) showFailureSnackBar(context, result.failure!);
+```
+
+`OutboxEntry.id` используйте как ключ идемпотентности на сервере.
+
+### Валидаторы форм
+
+Готовые правила для `TextFormField.validator`: `requiredField`, `email`, `phone`, `url`, `number`, `minLength` / `maxLength`, `password` и композитор `compose`. Тексты — из каталога сообщений пакета (локализуются вместе с ним), имя поля подставляется через `fieldName:`, точечная замена текста — через `message:`.
+
+```dart
+TextFormField(
+  decoration: const InputDecoration(labelText: 'Email'),
+  validator: NexoValidators.compose([
+    NexoValidators.requiredField(fieldName: 'Email'),
+    NexoValidators.email(message: 'Проверьте адрес почты'),
+  ]),
+)
+```
+
+### nexo_ui
+
+- **`NexoAsyncStateBuilder<T>`** — маппинг `NexoAsyncState` на UI; обязателен только `success`, у остальных веток разумные дефолты.
+- **`NexoFailureView`** — иконка + `userMessage` + опциональный технический код + кнопка «Повторить».
+- **`NexoEmptyView`**, **`NexoSkeletonLoader`** / **`NexoSkeletonList`** — пустое состояние и заглушки загрузки.
+- **`showFailureSnackBar(context, failure)`** / **`showFailureDialog(...)`** — единообразный показ ошибок из `FailurePresenter`.
+- **`NexoButton`**, **`NexoCard`**, гэпы `num.gapH` / `num.gapW`, цепочки обёрток (`pad`, `center`, `expanded`, …).
+
+Типовой экран целиком:
+
+```dart
+NexoAsyncStateBuilder<List<User>>(
+  state: state,
+  loading: (_) => const NexoSkeletonList(itemCount: 4),
+  success: (_, users) => UserList(users),
+  failure: (_, failure) => NexoFailureView(
+    failure: failure,
+    onRetry: () => context.read<UsersCubit>().retry(),
+  ),
+)
+```
+
+### nexo_testing
+
+Матчеры для тестов на базе пакета `matcher`:
+
+```dart
+import 'package:nexo/nexo_testing.dart';
+
+expect(result, isSuccess(42));
+expect(result, isFailure(code: 'network.no_internet'));
+expect(failure, failureWithUserMessage('Нет подключения к интернету'));
+final data = result.dataOrThrow(); // бросит StateError с кодом ошибки
+```
+
 
 ## Минимальный пример
 
@@ -186,7 +284,7 @@ Bloc.observer = NexoBlocObserver(
 
 ## Пример приложения
 
-Каталог **`example/`** — обычное Flutter-приложение с path-зависимостью на родительский пакет. Запуск из корня репозитория:
+Каталог **`example/`** — демо-галерея с четырьмя вкладками: асинхронный экран (`NexoAsyncCubit` + `NexoAsyncStateBuilder` + skeleton/empty/failure), форма на `NexoValidators`, feedback-виджеты и живая очередь `NexoOutbox`. Запуск из корня репозитория:
 
 ```bash
 cd example && flutter run
