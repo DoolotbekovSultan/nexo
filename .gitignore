@@ -29,6 +29,3 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 /build/
 /coverage/
-
-# WIP — не публиковать до готовности
-lib/packages/nexo_ui/

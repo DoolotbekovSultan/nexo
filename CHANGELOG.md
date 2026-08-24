@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.5-beta.1
+
+- Новый модуль **`nexo_ui`** (ранее WIP за `.gitignore`, теперь часть публичного API):
+  - `gap.dart`: расширения **`num.gapH` / `num.gapW`** — спейсеры для `Column`/`Row` с масштабированием через ScreenUtil (требует инициализации `ScreenUtilInit`);
+  - `widget_wrappers.dart`: цепочки обёрток виджетов — `pad` / `padSymmetric` / `padOnly`, `center`, `align`, `expanded`, `flexible`, `sized`, `aspectRatio`, `opacity`, `safeArea`, `clipRRect`, `decorated`, `onTap`;
+  - `text_wrapper.dart`: `'строка'.text(...)` — быстрое создание `Text`;
+  - компоненты **`NexoButton`** (варианты filled/outlined/text, состояние загрузки, иконка) и **`NexoCard`** (рамка, тень, нажатие);
+- Баррел `lib/nexo_ui.dart`; модуль также экспортируется из зонтичного `package:nexo/nexo.dart`.
+
 ## 0.0.4-beta.4
 
 - **Web-совместимость `nexo_errors`**: мапперы больше не импортируют `dart:io` напрямую.

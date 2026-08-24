@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
@@ -23,7 +22,8 @@ class NexoFlutterErrors {
   static NexoLogger? _logger;
   static NexoCrashReporter? _crashReporter;
   static FlutterExceptionHandler? _previousFlutterOnError;
-  static bool Function(Object error, StackTrace stack)? _previousPlatformOnError;
+  static bool Function(Object error, StackTrace stack)?
+  _previousPlatformOnError;
   static bool _installed = false;
 
   /// Подключает глобальные хендлеры. Вызывайте один раз после

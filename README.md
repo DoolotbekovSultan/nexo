@@ -37,6 +37,7 @@ dart run build_runner build --delete-conflicting-outputs
 | `nexo_core` | UseCase, StreamUseCase, Bloc/Cubit, сеть (Dio), локальные/удалённые data source, пагинация, вспомогательные блок-хелперы |
 | `nexo_errors` | `Failure` (sealed + Freezed), типизированные подтипы ошибок, `FailureMapper`, подмапперы (Dio, Hive, Isar, и т.д.) |
 | `nexo_logger` | Абстракция `NexoLogger`, адаптер под **Talker** |
+| `nexo_ui` | UI-утилиты: спейсеры-гэпы (ScreenUtil), цепочки обёрток виджетов, `NexoButton`, `NexoCard` |
 
 Рекомендуемые **barrel-импорты**:
 
@@ -86,7 +87,7 @@ failure.localizedMessage(const EnFailureUserMessages());
 - **Firebase (частично):** `firebase_core`, `firebase_auth`
 - **Модели:** `freezed_annotation`, `json_annotation`
 - **Логи:** `talker`
-- **UI (в пакете объявлено):** `flutter_screenutil`
+- **UI:** `flutter_screenutil` (возможна для адаптивных спейсеров; нативные гэпы — чистые пиксели)
 
 ## Модули и публичное API
 
