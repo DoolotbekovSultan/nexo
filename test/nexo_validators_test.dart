@@ -13,14 +13,14 @@ void main() {
 
     test('с именем поля подставляется в сообщение', () {
       expect(
-        NexoValidators.requiredField('Email')(''),
+        NexoValidators.requiredField(fieldName: 'Email')(''),
         'Поле «Email» обязательно',
       );
       expect(NexoValidators.requiredField()(''), 'Поле обязательно');
     });
 
     test('непустое значение проходит', () {
-      expect(NexoValidators.requiredField('Email')('a@b.c'), isNull);
+      expect(NexoValidators.requiredField(fieldName: 'Email')('a@b.c'), isNull);
     });
   });
 
@@ -70,13 +70,13 @@ void main() {
 
   group('длина', () {
     test('minLength', () {
-      final validator = NexoValidators.minLength(3, 'Логин');
+      final validator = NexoValidators.minLength(3, fieldName: 'Логин');
       expect(validator('abcd'), isNull);
       expect(validator('ab'), '«Логин» слишком короткое');
     });
 
     test('maxLength', () {
-      final validator = NexoValidators.maxLength(3, 'Логин');
+      final validator = NexoValidators.maxLength(3, fieldName: 'Логин');
       expect(validator('abc'), isNull);
       expect(validator('abcd'), '«Логин» слишком длинное');
     });
@@ -84,7 +84,8 @@ void main() {
 
   group('password', () {
     test('короткий пароль — tooShort', () {
-      expect(NexoValidators.password(minLength: 8)('Ab1'), isNotNull);
+      final validator = NexoValidators.password(minLength: 8);
+      expect(validator('Ab1'), isNotNull);
     });
 
     test('без цифр или без букв — passwordTooWeak', () {
@@ -110,7 +111,7 @@ void main() {
 
   test('compose возвращает первую ошибку по порядку', () {
     final validator = NexoValidators.compose([
-      NexoValidators.requiredField('Email'),
+      NexoValidators.requiredField(fieldName: 'Email'),
       NexoValidators.email(),
     ]);
 
@@ -123,6 +124,65 @@ void main() {
     final validator = NexoValidators.email();
 
     expect(validator(''), isNull, reason: 'пустое значение пропускается');
+  });
+
+  group('кастомные сообщения (message)', () {
+    test('переопределяют текст каждого правила', () {
+      expect(
+        NexoValidators.requiredField(message: 'Заполните меня')(''),
+        'Заполните меня',
+      );
+      expect(
+        NexoValidators.email(message: 'Проверьте почту')('nope'),
+        'Проверьте почту',
+      );
+      expect(
+        NexoValidators.phone(message: 'Только цифры')('abc'),
+        'Только цифры',
+      );
+      expect(
+        NexoValidators.url(message: 'Нужна ссылка')('ftp://x.io'),
+        'Нужна ссылка',
+      );
+      expect(
+        NexoValidators.number(message: 'Введите число')('12a'),
+        'Введите число',
+      );
+      expect(
+        NexoValidators.minLength(3, message: 'Слишком мало')('ab'),
+        'Слишком мало',
+      );
+      expect(
+        NexoValidators.maxLength(3, message: 'Слишком много')('abcd'),
+        'Слишком много',
+      );
+      expect(
+        NexoValidators.password(message: 'Слабый пароль')('abcdef'),
+        'Слабый пароль',
+      );
+      expect(
+        NexoValidators.password(message: 'Слабый пароль')('Ab1'),
+        'Слабый пароль',
+        reason: 'message заменяет и ошибку длины',
+      );
+    });
+
+    test('при корректном значении сообщение не показывается', () {
+      expect(
+        NexoValidators.email(message: 'Ошибка')('user@example.com'),
+        isNull,
+      );
+    });
+
+    test('compose прокидывает кастомное сообщение наверх', () {
+      final validator = NexoValidators.compose([
+        NexoValidators.requiredField(fieldName: 'ИНН'),
+        NexoValidators.minLength(14, message: 'ИНН — 14 цифр'),
+      ]);
+
+      expect(validator(''), 'Поле «ИНН» обязательно');
+      expect(validator('123'), 'ИНН — 14 цифр');
+    });
   });
 
   test('сообщения локализуются каталогом (EN)', () {
