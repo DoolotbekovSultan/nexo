@@ -1,5 +1,6 @@
-import 'platform_exceptions_io.dart' as impl
-    if (dart.library.js_interop) 'platform_exceptions_stub.dart';
+import 'platform_exceptions_io.dart'
+    if (dart.library.js_interop) 'platform_exceptions_stub.dart'
+    as impl;
 
 /// Platform-agnostic probes for `dart:io` exception types.
 ///
