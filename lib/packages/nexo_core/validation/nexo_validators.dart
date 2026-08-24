@@ -3,15 +3,17 @@ import 'package:nexo/packages/nexo_errors/types/validation_failure.dart';
 
 /// Валидатор поля формы: текст ошибки либо `null`, если значение корректно.
 ///
-/// Совместим с `TextFormField.validator`.
-typedef NexoValidator<T> = String? Function(T value);
+/// Тип совместим с `FormFieldValidator` из Flutter (`String? Function(T?)`),
+/// поэтому подходит напрямую для `TextFormField.validator`.
+typedef NexoValidator<T> = String? Function(T? value);
 
 /// Готовые валидаторы для форм.
 ///
 /// По умолчанию тексты ошибок строятся через [Failure.userMessage] и
 /// локализуются каталогом сообщений пакета; [String] параметр `fieldName`
 /// подставляется в сообщение («Поле «Email» обязательно»). Любое правило
-/// можно переопределить целиком параметром `message`.
+/// можно переопределить целиком параметром `message`. `null` считается
+/// пустым значением.
 ///
 /// Семантика: кроме [requiredField] пустые значения считаются валидными —
 /// необязательные поля можно валидировать одним правилом, обязательные
@@ -35,7 +37,7 @@ abstract final class NexoValidators {
     String? fieldName,
     String? message,
   }) => (value) {
-    if (value.trim().isNotEmpty) return null;
+    if ((value ?? '').trim().isNotEmpty) return null;
     return message ??
         _message(ValidationFailure.requiredField, field: fieldName);
   };
@@ -43,8 +45,9 @@ abstract final class NexoValidators {
   /// Email-адрес; пустое значение пропускает.
   static NexoValidator<String> email({String? fieldName, String? message}) =>
       (value) {
-        if (value.trim().isEmpty) return null;
-        if (_emailRegExp.hasMatch(value.trim())) return null;
+        final trimmed = (value ?? '').trim();
+        if (trimmed.isEmpty) return null;
+        if (_emailRegExp.hasMatch(trimmed)) return null;
         return message ??
             _message(ValidationFailure.invalidEmail, field: fieldName);
       };
@@ -52,7 +55,7 @@ abstract final class NexoValidators {
   /// Телефон: цифры, ведущий `+`, скобки, дефисы и пробелы; пустое пропускает.
   static NexoValidator<String> phone({String? fieldName, String? message}) =>
       (value) {
-        final trimmed = value.trim();
+        final trimmed = (value ?? '').trim();
         if (trimmed.isEmpty) return null;
         if (_phoneRegExp.hasMatch(trimmed)) return null;
         return message ??
@@ -62,7 +65,7 @@ abstract final class NexoValidators {
   /// URL со схемой `http` / `https`; пустое значение пропускает.
   static NexoValidator<String> url({String? fieldName, String? message}) =>
       (value) {
-        final trimmed = value.trim();
+        final trimmed = (value ?? '').trim();
         if (trimmed.isEmpty) return null;
 
         final uri = Uri.tryParse(trimmed);
@@ -77,7 +80,7 @@ abstract final class NexoValidators {
   /// Число (целое или дробное); пустое значение пропускает.
   static NexoValidator<String> number({String? fieldName, String? message}) =>
       (value) {
-        final trimmed = value.trim();
+        final trimmed = (value ?? '').trim();
         if (trimmed.isEmpty) return null;
         if (num.tryParse(trimmed.replaceFirst(',', '.')) != null) return null;
         return message ??
@@ -90,7 +93,7 @@ abstract final class NexoValidators {
     String? fieldName,
     String? message,
   }) => (value) {
-    final trimmed = value.trim();
+    final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty || trimmed.length >= min) return null;
     return message ?? _message(ValidationFailure.tooShort, field: fieldName);
   };
@@ -101,7 +104,7 @@ abstract final class NexoValidators {
     String? fieldName,
     String? message,
   }) => (value) {
-    if (value.trim().length <= max) return null;
+    if ((value ?? '').trim().length <= max) return null;
     return message ?? _message(ValidationFailure.tooLong, field: fieldName);
   };
 
@@ -117,7 +120,7 @@ abstract final class NexoValidators {
     String? fieldName,
     String? message,
   }) => (value) {
-    final trimmed = value.trim();
+    final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return null;
 
     final effectiveField = fieldName ?? 'Пароль';
