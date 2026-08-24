@@ -44,14 +44,20 @@ sealed class Failure with _$Failure {
   const Failure._();
 
   /// Проблемы соединения
-  const factory Failure.network({required NetworkFailure type}) =
-      NetworkAppFailure;
+  ///
+  /// [requestId] — идентификатор запроса (`x-request-id`), если ошибка пришла
+  /// из Dio с включённым `NexoRequestIdInterceptor`.
+  const factory Failure.network({
+    required NetworkFailure type,
+    String? requestId,
+  }) = NetworkAppFailure;
 
   /// HTTP-ошибки (4xx / 5xx)
   const factory Failure.http({
     required HttpFailure type,
     int? statusCode,
     String? message,
+    String? requestId,
     @Default({}) Map<String, List<String>> fieldErrors,
   }) = HttpAppFailure;
 

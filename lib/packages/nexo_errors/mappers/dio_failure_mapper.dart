@@ -9,6 +9,10 @@ import '../types/validation_failure.dart';
 import 'failure_sub_mapper.dart';
 import 'platform_exceptions.dart';
 
+/// Ключ `RequestOptions.extra`, под которым `NexoRequestIdInterceptor`
+/// сохраняет идентификатор запроса; [DioFailureMapper] читает его оттуда.
+const String nexoRequestIdExtraKey = '_nexo_request_id';
+
 final class DioFailureMapper implements FailureSubMapper {
   const DioFailureMapper();
 
@@ -16,6 +20,28 @@ final class DioFailureMapper implements FailureSubMapper {
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is! DioException) return null;
 
+    final mapped = _tryMapInner(error, stackTrace);
+    return _attachRequestId(mapped, error);
+  }
+
+  /// Прокидывает `x-request-id` из [DioException.requestOptions] в
+  /// сетевые и HTTP-ошибки, чтобы связывать их с логами и сервером.
+  Failure? _attachRequestId(Failure? failure, DioException error) {
+    if (failure == null) return null;
+
+    final id = error.requestOptions.extra[nexoRequestIdExtraKey];
+    if (id is! String || id.isEmpty) return failure;
+
+    if (failure case final NetworkAppFailure f) {
+      return f.copyWith(requestId: id);
+    }
+    if (failure case final HttpAppFailure f) {
+      return f.copyWith(requestId: id);
+    }
+    return failure;
+  }
+
+  Failure? _tryMapInner(DioException error, [StackTrace? stackTrace]) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:

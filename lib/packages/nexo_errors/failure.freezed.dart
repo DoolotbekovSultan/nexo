@@ -161,11 +161,11 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NetworkFailure type)?  network,TResult Function( HttpFailure type,  int? statusCode,  String? message,  Map<String, List<String>> fieldErrors)?  http,TResult Function( AuthFailure type,  String? message)?  auth,TResult Function( ValidationFailure type,  String? field,  String? message,  Map<String, List<String>> fieldErrors)?  validation,TResult Function( StorageFailure type,  String? key,  String? message)?  storage,TResult Function( DatabaseFailure type,  String? message)?  database,TResult Function( CacheFailure type,  String? key)?  cache,TResult Function( ParseFailure type,  String? field,  String? message)?  parse,TResult Function( PermissionFailure type,  String? permission)?  permission,TResult Function( PlatformFailure type,  String? details)?  platform,TResult Function( FileFailure type,  String? path,  String? message)?  file,TResult Function( LocationFailure type,  String? message)?  location,TResult Function( NotificationFailure type,  String? message)?  notification,TResult Function( PaymentFailure type,  String? message,  String? transactionId)?  payment,TResult Function( SyncFailure type,  String? message)?  sync,TResult Function( Object? error,  StackTrace? stackTrace,  String? message)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NetworkFailure type,  String? requestId)?  network,TResult Function( HttpFailure type,  int? statusCode,  String? message,  String? requestId,  Map<String, List<String>> fieldErrors)?  http,TResult Function( AuthFailure type,  String? message)?  auth,TResult Function( ValidationFailure type,  String? field,  String? message,  Map<String, List<String>> fieldErrors)?  validation,TResult Function( StorageFailure type,  String? key,  String? message)?  storage,TResult Function( DatabaseFailure type,  String? message)?  database,TResult Function( CacheFailure type,  String? key)?  cache,TResult Function( ParseFailure type,  String? field,  String? message)?  parse,TResult Function( PermissionFailure type,  String? permission)?  permission,TResult Function( PlatformFailure type,  String? details)?  platform,TResult Function( FileFailure type,  String? path,  String? message)?  file,TResult Function( LocationFailure type,  String? message)?  location,TResult Function( NotificationFailure type,  String? message)?  notification,TResult Function( PaymentFailure type,  String? message,  String? transactionId)?  payment,TResult Function( SyncFailure type,  String? message)?  sync,TResult Function( Object? error,  StackTrace? stackTrace,  String? message)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NetworkAppFailure() when network != null:
-return network(_that.type);case HttpAppFailure() when http != null:
-return http(_that.type,_that.statusCode,_that.message,_that.fieldErrors);case AuthAppFailure() when auth != null:
+return network(_that.type,_that.requestId);case HttpAppFailure() when http != null:
+return http(_that.type,_that.statusCode,_that.message,_that.requestId,_that.fieldErrors);case AuthAppFailure() when auth != null:
 return auth(_that.type,_that.message);case ValidationAppFailure() when validation != null:
 return validation(_that.type,_that.field,_that.message,_that.fieldErrors);case StorageAppFailure() when storage != null:
 return storage(_that.type,_that.key,_that.message);case DatabaseAppFailure() when database != null:
@@ -197,11 +197,11 @@ return unknown(_that.error,_that.stackTrace,_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NetworkFailure type)  network,required TResult Function( HttpFailure type,  int? statusCode,  String? message,  Map<String, List<String>> fieldErrors)  http,required TResult Function( AuthFailure type,  String? message)  auth,required TResult Function( ValidationFailure type,  String? field,  String? message,  Map<String, List<String>> fieldErrors)  validation,required TResult Function( StorageFailure type,  String? key,  String? message)  storage,required TResult Function( DatabaseFailure type,  String? message)  database,required TResult Function( CacheFailure type,  String? key)  cache,required TResult Function( ParseFailure type,  String? field,  String? message)  parse,required TResult Function( PermissionFailure type,  String? permission)  permission,required TResult Function( PlatformFailure type,  String? details)  platform,required TResult Function( FileFailure type,  String? path,  String? message)  file,required TResult Function( LocationFailure type,  String? message)  location,required TResult Function( NotificationFailure type,  String? message)  notification,required TResult Function( PaymentFailure type,  String? message,  String? transactionId)  payment,required TResult Function( SyncFailure type,  String? message)  sync,required TResult Function( Object? error,  StackTrace? stackTrace,  String? message)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NetworkFailure type,  String? requestId)  network,required TResult Function( HttpFailure type,  int? statusCode,  String? message,  String? requestId,  Map<String, List<String>> fieldErrors)  http,required TResult Function( AuthFailure type,  String? message)  auth,required TResult Function( ValidationFailure type,  String? field,  String? message,  Map<String, List<String>> fieldErrors)  validation,required TResult Function( StorageFailure type,  String? key,  String? message)  storage,required TResult Function( DatabaseFailure type,  String? message)  database,required TResult Function( CacheFailure type,  String? key)  cache,required TResult Function( ParseFailure type,  String? field,  String? message)  parse,required TResult Function( PermissionFailure type,  String? permission)  permission,required TResult Function( PlatformFailure type,  String? details)  platform,required TResult Function( FileFailure type,  String? path,  String? message)  file,required TResult Function( LocationFailure type,  String? message)  location,required TResult Function( NotificationFailure type,  String? message)  notification,required TResult Function( PaymentFailure type,  String? message,  String? transactionId)  payment,required TResult Function( SyncFailure type,  String? message)  sync,required TResult Function( Object? error,  StackTrace? stackTrace,  String? message)  unknown,}) {final _that = this;
 switch (_that) {
 case NetworkAppFailure():
-return network(_that.type);case HttpAppFailure():
-return http(_that.type,_that.statusCode,_that.message,_that.fieldErrors);case AuthAppFailure():
+return network(_that.type,_that.requestId);case HttpAppFailure():
+return http(_that.type,_that.statusCode,_that.message,_that.requestId,_that.fieldErrors);case AuthAppFailure():
 return auth(_that.type,_that.message);case ValidationAppFailure():
 return validation(_that.type,_that.field,_that.message,_that.fieldErrors);case StorageAppFailure():
 return storage(_that.type,_that.key,_that.message);case DatabaseAppFailure():
@@ -229,11 +229,11 @@ return unknown(_that.error,_that.stackTrace,_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NetworkFailure type)?  network,TResult? Function( HttpFailure type,  int? statusCode,  String? message,  Map<String, List<String>> fieldErrors)?  http,TResult? Function( AuthFailure type,  String? message)?  auth,TResult? Function( ValidationFailure type,  String? field,  String? message,  Map<String, List<String>> fieldErrors)?  validation,TResult? Function( StorageFailure type,  String? key,  String? message)?  storage,TResult? Function( DatabaseFailure type,  String? message)?  database,TResult? Function( CacheFailure type,  String? key)?  cache,TResult? Function( ParseFailure type,  String? field,  String? message)?  parse,TResult? Function( PermissionFailure type,  String? permission)?  permission,TResult? Function( PlatformFailure type,  String? details)?  platform,TResult? Function( FileFailure type,  String? path,  String? message)?  file,TResult? Function( LocationFailure type,  String? message)?  location,TResult? Function( NotificationFailure type,  String? message)?  notification,TResult? Function( PaymentFailure type,  String? message,  String? transactionId)?  payment,TResult? Function( SyncFailure type,  String? message)?  sync,TResult? Function( Object? error,  StackTrace? stackTrace,  String? message)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NetworkFailure type,  String? requestId)?  network,TResult? Function( HttpFailure type,  int? statusCode,  String? message,  String? requestId,  Map<String, List<String>> fieldErrors)?  http,TResult? Function( AuthFailure type,  String? message)?  auth,TResult? Function( ValidationFailure type,  String? field,  String? message,  Map<String, List<String>> fieldErrors)?  validation,TResult? Function( StorageFailure type,  String? key,  String? message)?  storage,TResult? Function( DatabaseFailure type,  String? message)?  database,TResult? Function( CacheFailure type,  String? key)?  cache,TResult? Function( ParseFailure type,  String? field,  String? message)?  parse,TResult? Function( PermissionFailure type,  String? permission)?  permission,TResult? Function( PlatformFailure type,  String? details)?  platform,TResult? Function( FileFailure type,  String? path,  String? message)?  file,TResult? Function( LocationFailure type,  String? message)?  location,TResult? Function( NotificationFailure type,  String? message)?  notification,TResult? Function( PaymentFailure type,  String? message,  String? transactionId)?  payment,TResult? Function( SyncFailure type,  String? message)?  sync,TResult? Function( Object? error,  StackTrace? stackTrace,  String? message)?  unknown,}) {final _that = this;
 switch (_that) {
 case NetworkAppFailure() when network != null:
-return network(_that.type);case HttpAppFailure() when http != null:
-return http(_that.type,_that.statusCode,_that.message,_that.fieldErrors);case AuthAppFailure() when auth != null:
+return network(_that.type,_that.requestId);case HttpAppFailure() when http != null:
+return http(_that.type,_that.statusCode,_that.message,_that.requestId,_that.fieldErrors);case AuthAppFailure() when auth != null:
 return auth(_that.type,_that.message);case ValidationAppFailure() when validation != null:
 return validation(_that.type,_that.field,_that.message,_that.fieldErrors);case StorageAppFailure() when storage != null:
 return storage(_that.type,_that.key,_that.message);case DatabaseAppFailure() when database != null:
@@ -259,10 +259,11 @@ return unknown(_that.error,_that.stackTrace,_that.message);case _:
 
 
 class NetworkAppFailure extends Failure {
-  const NetworkAppFailure({required this.type}): super._();
+  const NetworkAppFailure({required this.type, this.requestId}): super._();
   
 
  final  NetworkFailure type;
+ final  String? requestId;
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
@@ -274,16 +275,16 @@ $NetworkAppFailureCopyWith<NetworkAppFailure> get copyWith => _$NetworkAppFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NetworkAppFailure&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NetworkAppFailure&&(identical(other.type, type) || other.type == type)&&(identical(other.requestId, requestId) || other.requestId == requestId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,type);
+int get hashCode => Object.hash(runtimeType,type,requestId);
 
 @override
 String toString() {
-  return 'Failure.network(type: $type)';
+  return 'Failure.network(type: $type, requestId: $requestId)';
 }
 
 
@@ -294,7 +295,7 @@ abstract mixin class $NetworkAppFailureCopyWith<$Res> implements $FailureCopyWit
   factory $NetworkAppFailureCopyWith(NetworkAppFailure value, $Res Function(NetworkAppFailure) _then) = _$NetworkAppFailureCopyWithImpl;
 @useResult
 $Res call({
- NetworkFailure type
+ NetworkFailure type, String? requestId
 });
 
 
@@ -311,10 +312,11 @@ class _$NetworkAppFailureCopyWithImpl<$Res>
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? type = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? type = null,Object? requestId = freezed,}) {
   return _then(NetworkAppFailure(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as NetworkFailure,
+as NetworkFailure,requestId: freezed == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -325,12 +327,13 @@ as NetworkFailure,
 
 
 class HttpAppFailure extends Failure {
-  const HttpAppFailure({required this.type, this.statusCode, this.message, final  Map<String, List<String>> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
+  const HttpAppFailure({required this.type, this.statusCode, this.message, this.requestId, final  Map<String, List<String>> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
   
 
  final  HttpFailure type;
  final  int? statusCode;
  final  String? message;
+ final  String? requestId;
  final  Map<String, List<String>> _fieldErrors;
 @JsonKey() Map<String, List<String>> get fieldErrors {
   if (_fieldErrors is EqualUnmodifiableMapView) return _fieldErrors;
@@ -349,16 +352,16 @@ $HttpAppFailureCopyWith<HttpAppFailure> get copyWith => _$HttpAppFailureCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HttpAppFailure&&(identical(other.type, type) || other.type == type)&&(identical(other.statusCode, statusCode) || other.statusCode == statusCode)&&(identical(other.message, message) || other.message == message)&&const DeepCollectionEquality().equals(other._fieldErrors, _fieldErrors));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HttpAppFailure&&(identical(other.type, type) || other.type == type)&&(identical(other.statusCode, statusCode) || other.statusCode == statusCode)&&(identical(other.message, message) || other.message == message)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&const DeepCollectionEquality().equals(other._fieldErrors, _fieldErrors));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,type,statusCode,message,const DeepCollectionEquality().hash(_fieldErrors));
+int get hashCode => Object.hash(runtimeType,type,statusCode,message,requestId,const DeepCollectionEquality().hash(_fieldErrors));
 
 @override
 String toString() {
-  return 'Failure.http(type: $type, statusCode: $statusCode, message: $message, fieldErrors: $fieldErrors)';
+  return 'Failure.http(type: $type, statusCode: $statusCode, message: $message, requestId: $requestId, fieldErrors: $fieldErrors)';
 }
 
 
@@ -369,7 +372,7 @@ abstract mixin class $HttpAppFailureCopyWith<$Res> implements $FailureCopyWith<$
   factory $HttpAppFailureCopyWith(HttpAppFailure value, $Res Function(HttpAppFailure) _then) = _$HttpAppFailureCopyWithImpl;
 @useResult
 $Res call({
- HttpFailure type, int? statusCode, String? message, Map<String, List<String>> fieldErrors
+ HttpFailure type, int? statusCode, String? message, String? requestId, Map<String, List<String>> fieldErrors
 });
 
 
@@ -386,11 +389,12 @@ class _$HttpAppFailureCopyWithImpl<$Res>
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? type = null,Object? statusCode = freezed,Object? message = freezed,Object? fieldErrors = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? type = null,Object? statusCode = freezed,Object? message = freezed,Object? requestId = freezed,Object? fieldErrors = null,}) {
   return _then(HttpAppFailure(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as HttpFailure,statusCode: freezed == statusCode ? _self.statusCode : statusCode // ignore: cast_nullable_to_non_nullable
 as int?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String?,requestId: freezed == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
 as String?,fieldErrors: null == fieldErrors ? _self._fieldErrors : fieldErrors // ignore: cast_nullable_to_non_nullable
 as Map<String, List<String>>,
   ));

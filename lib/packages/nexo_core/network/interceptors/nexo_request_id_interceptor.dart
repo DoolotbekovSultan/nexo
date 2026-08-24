@@ -1,12 +1,20 @@
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:nexo/packages/nexo_errors/mappers/dio_failure_mapper.dart'
+    show nexoRequestIdExtraKey;
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
 /// Добавляет `x-request-id` к запросу и пишет его в логи ответа / ошибки.
+///
+/// Идентификатор также сохраняется в `extra`, откуда `DioFailureMapper`
+/// прокидывает его в сетевые и HTTP-ошибки (`Failure`) — используйте это,
+/// чтобы связывать ошибки UI с логами сервера.
 class NexoRequestIdInterceptor extends Interceptor {
   static const String headerName = 'x-request-id';
-  static const String extraRequestIdKey = '_nexo_request_id';
+
+  /// Ключ `RequestOptions.extra` с идентификатором запроса.
+  static const String extraRequestIdKey = nexoRequestIdExtraKey;
 
   final NexoLogger? logger;
   final String Function()? generateId;
