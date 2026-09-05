@@ -41,6 +41,7 @@ This creates `lib/features/auth/` with Cubit, datasource, repository, use case, 
 - **Mapper generation:** `--mapper` (default: on)
 - **Mock datasources:** `--mock` (default: on)
 - **List vs single:** `--list true/false`
+- **Custom output directory:** `--root` (default: `lib/features`)
 
 ---
 
@@ -67,6 +68,9 @@ nexo_cli feature notification --list-cubit --get
 
 # Everything combined
 nexo_cli feature order --bloc --freezed --json '{"id": "String"}' --get --create --update --delete --tests
+
+# Custom output directory
+nexo_cli feature faq --get --root lib/presentation
 ```
 
 ---
@@ -96,6 +100,7 @@ nexo_cli feature order --bloc --freezed --json '{"id": "String"}' --get --create
 | `--tests` | off | Generate test files |
 | `--dry-run` (`-n`) | off | Preview without writing |
 | `--overwrite` | off | Overwrite existing files |
+| `--root` | `lib/features` | Base output directory |
 
 *cubit is default when no style is specified.
 
