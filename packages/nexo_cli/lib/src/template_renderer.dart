@@ -796,8 +796,8 @@ import '../repositories/i_{{featureSnake}}_repository.dart';
 class Get{{Feature}}UseCase extends NexoUseCase<{{retType}}, NoParams> {
   Get{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
@@ -825,8 +825,8 @@ class Create{{Feature}}UseCase
     extends NexoUseCase<{{Feature}}Entity, Create{{Feature}}Params> {
   Create{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
@@ -851,8 +851,8 @@ class Update{{Feature}}UseCase
     extends NexoUseCase<{{Feature}}Entity, Update{{Feature}}Params> {
   Update{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
@@ -874,8 +874,8 @@ import '../repositories/i_{{featureSnake}}_repository.dart';
 class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
   Delete{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
@@ -901,8 +901,8 @@ class Create{{Feature}}UseCase
     extends NexoUseCase<{{Feature}}Entity, Create{{Feature}}Params> {
   Create{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
@@ -918,8 +918,8 @@ class Update{{Feature}}UseCase
     extends NexoUseCase<{{Feature}}Entity, Update{{Feature}}Params> {
   Update{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
@@ -934,8 +934,8 @@ class Update{{Feature}}UseCase
 class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
   Delete{{Feature}}UseCase(
     super._logger, {
-    required I{{Feature}}Repository repository,
-  }) : _repository = repository;
+    required this._repository,
+  });
 
   final I{{Feature}}Repository _repository;
 
