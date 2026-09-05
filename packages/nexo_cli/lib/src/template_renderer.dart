@@ -1029,9 +1029,8 @@ import '{{featureSnake}}_state.dart';
 @injectable
 class {{Feature}}Bloc extends NexoBloc<{{Feature}}Event, {{Feature}}State> {
   {{Feature}}Bloc({
-    required Get{{Feature}}UseCase get{{Feature}}UseCase,
-  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
-        super(const {{Feature}}State.loading()) {
+    required this._get{{Feature}}UseCase,
+  }) : super(const {{Feature}}State.loading()) {
     on<{{Feature}}Event>(_onEvent);
   }
 
@@ -1071,9 +1070,8 @@ import '{{featureSnake}}_state.dart';
 @injectable
 class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
   {{Feature}}Cubit({
-    required Get{{Feature}}UseCase get{{Feature}}UseCase,
-  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
-        super(const {{Feature}}State.loading());
+    required this._get{{Feature}}UseCase,
+  }) : super(const {{Feature}}State.loading());
 
   final Get{{Feature}}UseCase _get{{Feature}}UseCase;
 
@@ -1099,9 +1097,8 @@ import '{{featureSnake}}_state.dart';
 @injectable
 class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
   {{Feature}}Cubit({
-    required Get{{Feature}}UseCase get{{Feature}}UseCase,
-  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
-        super(const NexoAsyncLoading());
+    required this._get{{Feature}}UseCase,
+  }) : super(const NexoAsyncLoading());
 
   final Get{{Feature}}UseCase _get{{Feature}}UseCase;
 
@@ -1131,9 +1128,8 @@ import '{{featureSnake}}_state.dart';
 @injectable
 class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
   {{Feature}}Cubit({
-    required Get{{Feature}}UseCase get{{Feature}}UseCase,
-  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
-        super(const {{Feature}}State.loading());
+    required this._get{{Feature}}UseCase,
+  }) : super(const {{Feature}}State.loading());
 
   final Get{{Feature}}UseCase _get{{Feature}}UseCase;
 
