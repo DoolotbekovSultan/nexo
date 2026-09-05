@@ -145,6 +145,11 @@ class FeatureCommand extends Command<int> {
         defaultsTo: false,
         negatable: false,
         help: 'Overwrite existing files; otherwise skip them.',
+      )
+      ..addOption(
+        'root',
+        defaultsTo: 'lib/features',
+        help: 'Base output directory for generated files.',
       );
   }
 
@@ -262,10 +267,11 @@ class FeatureCommand extends Command<int> {
       jsonFields: jsonFields,
       crudOperations: crudOps,
       isList: isList,
+      root: argResults!['root'] as String,
     );
 
     stdout.writeln('Planned feature: ${names.snakeCase}');
-    stdout.writeln('Root: lib/features/${names.snakeCase}/');
+    stdout.writeln('Root: ${options.root}/${names.snakeCase}/');
     stdout.writeln();
     stdout.writeln('Options:');
     stdout.writeln('  presentation-only: ${options.presentationOnly}');
@@ -288,7 +294,7 @@ class FeatureCommand extends Command<int> {
     }
     stdout.writeln();
     stdout.writeln(
-      'Planned structure (relative to lib/features/${names.snakeCase}/):',
+      'Planned structure (relative to ${options.root}/${names.snakeCase}/):',
     );
     for (final path in FeaturePlan.plannedLibPaths(names, options)) {
       stdout.writeln('  - $path');
@@ -310,7 +316,7 @@ class FeatureCommand extends Command<int> {
     stdout.writeln();
 
     final projectRoot = Directory.current.path;
-    final libRoot = p.join(projectRoot, 'lib', 'features', names.snakeCase);
+    final libRoot = p.join(projectRoot, options.root, names.snakeCase);
     final testRoot = p.join(projectRoot, 'test', 'features', names.snakeCase);
     final absolutePaths = <String>[
       ...FeaturePlan.plannedLibPaths(

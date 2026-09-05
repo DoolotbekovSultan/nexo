@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- New `--root` flag to customize output directory (default: `lib/features`).
+- 91 tests passing.
+
 ## 0.2.1
 
 - Fixed: repository template now adds `@Named('prod')` on constructor parameter when `--mock` is enabled (resolves injectable DI ambiguity).

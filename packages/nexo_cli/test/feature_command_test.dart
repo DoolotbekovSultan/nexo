@@ -197,5 +197,18 @@ void main() {
         0,
       );
     });
+
+    test('--root exits 0', () async {
+      expect(
+        await cli.run([
+          'feature',
+          'auth',
+          '--root',
+          'lib/presentation',
+          '--dry-run',
+        ]),
+        0,
+      );
+    });
   });
 }

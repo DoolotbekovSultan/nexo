@@ -25,6 +25,7 @@ final class FeatureOptions {
     this.crudOperations = const {},
     this.isList = true,
     this.viewModelName,
+    this.root = 'lib/features',
   });
 
   /// Only presentation layer -- no data/ or domain/.
@@ -79,6 +80,9 @@ final class FeatureOptions {
   /// Optional custom name for the view model (default: feature name).
   final String? viewModelName;
 
+  /// Base output directory (default: 'lib/features').
+  final String root;
+
   FeatureOptions copyWith({
     bool? presentationOnly,
     PresentationStyle? presentationStyle,
@@ -97,6 +101,7 @@ final class FeatureOptions {
     Set<String>? crudOperations,
     bool? isList,
     String? viewModelName,
+    String? root,
   }) {
     return FeatureOptions(
       presentationOnly: presentationOnly ?? this.presentationOnly,
@@ -116,6 +121,7 @@ final class FeatureOptions {
       crudOperations: crudOperations ?? this.crudOperations,
       isList: isList ?? this.isList,
       viewModelName: viewModelName ?? this.viewModelName,
+      root: root ?? this.root,
     );
   }
 
