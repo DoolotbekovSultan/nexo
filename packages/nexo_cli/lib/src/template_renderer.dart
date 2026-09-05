@@ -69,6 +69,11 @@ abstract final class TemplateRenderer {
     // ── Datasources ──
     if (norm.contains('datasources/mock_') &&
         norm.endsWith('_remote_data_source.dart')) {
+      if (!options.injectable) {
+        return options.isList
+            ? _tplMockRemoteDatasourceNoInjectable
+            : _tplMockRemoteDatasourceSingleNoInjectable;
+      }
       return options.isList
           ? _tplMockRemoteDatasource
           : _tplMockRemoteDatasourceSingle;
@@ -656,6 +661,27 @@ import '../models/{{featureSnake}}_model.dart';
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override
+  Future<{{modelRetType}}> getAll() async {
+    // TODO(nexo): return a mock {{Feature}}Model instance.
+    throw UnimplementedError();
+  }
+}
+''';
+
+const _tplMockRemoteDatasourceNoInjectable = r'''
+import '../models/{{featureSnake}}_model.dart';
+
+class Mock{{Feature}}RemoteDataSource {
+  Future<{{modelRetType}}> getAll() async {
+    return const [];
+  }
+}
+''';
+
+const _tplMockRemoteDatasourceSingleNoInjectable = r'''
+import '../models/{{featureSnake}}_model.dart';
+
+class Mock{{Feature}}RemoteDataSource {
   Future<{{modelRetType}}> getAll() async {
     // TODO(nexo): return a mock {{Feature}}Model instance.
     throw UnimplementedError();
