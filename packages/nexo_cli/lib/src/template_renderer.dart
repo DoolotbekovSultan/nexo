@@ -84,7 +84,7 @@ abstract final class TemplateRenderer {
     }
     if (norm.endsWith('_remote_datasource.dart')) {
       if (!options.injectable) return _tplRemoteDatasourceNoInjectable;
-      if (options.mock) return _tplRemoteDatasourceWithMock;
+      if (options.hasMultipleDatasources) return _tplRemoteDatasourceWithMock;
       return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
     }
     if (norm.endsWith('_local_datasource.dart')) {
@@ -224,8 +224,8 @@ abstract final class TemplateRenderer {
   }
 
   static String _generateFieldsCtorParams(Map<String, String>? fields) {
-    if (fields == null || fields.isEmpty) return '    String id,';
-    return fields.entries.map((e) => '    ${e.value} ${e.key},').join('\n');
+    if (fields == null || fields.isEmpty) return '    required String id,';
+    return fields.entries.map((e) => '    required ${e.value} ${e.key},').join('\n');
   }
 
   static String _generateFieldsCtor(Map<String, String>? fields) {
@@ -285,8 +285,8 @@ abstract final class TemplateRenderer {
   }
 
   static String _generateEntityCtorParams(Map<String, String>? fields) {
-    if (fields == null || fields.isEmpty) return '    String id,';
-    return fields.entries.map((e) => '    ${e.value} ${e.key},').join('\n');
+    if (fields == null || fields.isEmpty) return '    required String id,';
+    return fields.entries.map((e) => '    required ${e.value} ${e.key},').join('\n');
   }
 
   static String _generateMapperFields(Map<String, String>? fields) {
@@ -310,8 +310,8 @@ abstract final class TemplateRenderer {
   }
 
   static String _generateRequestCtorParams(Map<String, String>? fields) {
-    if (fields == null || fields.isEmpty) return '    String id,';
-    return fields.entries.map((e) => '    ${e.value} ${e.key},').join('\n');
+    if (fields == null || fields.isEmpty) return '    required String id,';
+    return fields.entries.map((e) => '    required ${e.value} ${e.key},').join('\n');
   }
 
   static String _snakeToLowerCamel(String snake) {
@@ -570,7 +570,7 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: [AppEnvironment.prod] if using environment-based DI.
+// TODO(nexo): add env: parameter when using environment-based DI.
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
     implements IRemote{{Feature}}DataSource {
@@ -687,7 +687,7 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: [AppEnvironment.mock] if using environment-based DI.
+// TODO(nexo): add env: parameter when using environment-based DI.
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override
@@ -703,7 +703,7 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: [AppEnvironment.mock] if using environment-based DI.
+// TODO(nexo): add env: parameter when using environment-based DI.
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override

@@ -147,7 +147,7 @@ void main() {
       );
       expect(out, contains('@LazySingleton'));
       expect(out, contains('class MockAuthRemoteDataSource'));
-      expect(out, contains('AppEnvironment.mock'));
+      expect(out, contains('TODO'));
     });
   });
 

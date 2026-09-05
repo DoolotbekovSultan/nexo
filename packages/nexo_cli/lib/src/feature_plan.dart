@@ -135,6 +135,9 @@ final class FeatureOptions {
   /// Whether to generate request DTOs (only if create or update is selected).
   bool get hasRequests => hasCreate || hasUpdate;
 
+  /// Whether there are multiple datasource implementations (mock or local).
+  bool get hasMultipleDatasources => mock || local;
+
   /// The return type string for use cases/repository methods.
   String returnType(NameUtils names) {
     final entity = '${names.pascalCase}Entity';
