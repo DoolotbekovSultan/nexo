@@ -570,7 +570,8 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: parameter when using environment-based DI.
+// TODO(nexo): replace @Named with env: [AppEnvironment.prod] if using environment-based DI.
+@Named('prod')
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
     implements IRemote{{Feature}}DataSource {
@@ -687,7 +688,8 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: parameter when using environment-based DI.
+// TODO(nexo): replace @Named with env: [AppEnvironment.mock] if using environment-based DI.
+@Named('mock')
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override
@@ -703,7 +705,8 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: parameter when using environment-based DI.
+// TODO(nexo): replace @Named with env: [AppEnvironment.mock] if using environment-based DI.
+@Named('mock')
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override
