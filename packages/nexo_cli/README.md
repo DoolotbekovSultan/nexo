@@ -2,7 +2,7 @@
 
 **CLI generator for Nexo-based Clean Architecture in Flutter apps.**
 
-`nexo_cli` scaffolds a feature module: `data`, `domain`, and `presentation` layers wired to [Nexo](https://pub.dev/packages/nexo) patterns (`NexoBloc` / `NexoCubit`, `NexoUseCase`, `NexoAsyncState`, `Result`, `BaseRemoteDataSource`, and related types). Run it from the root of a Flutter app that already depends on `package:nexo`.
+`nexo_cli` scaffolds feature modules with `data`, `domain`, and `presentation` layers wired to [Nexo](https://pub.dev/packages/nexo) patterns. Run it from the root of a Flutter app that already depends on `package:nexo`.
 
 ---
 
@@ -12,8 +12,6 @@
 dart pub global activate nexo_cli
 ```
 
-Ensure the pub cache `bin` directory is on your `PATH` (the `dart pub global` output shows the path to add).
-
 Verify:
 
 ```bash
@@ -22,114 +20,123 @@ nexo_cli --help
 
 ---
 
-## Usage
-
-From your **Flutter app root** (where `lib/` and `pubspec.yaml` live):
+## Quick Start
 
 ```bash
-nexo_cli feature <feature_name> [options]
+# From your Flutter app root
+nexo_cli feature auth --get --create --list true
 ```
 
-Example:
+This creates `lib/features/auth/` with Cubit, datasource, repository, use case, and screen.
 
-```bash
-nexo_cli feature auth
-```
+---
 
-This creates `lib/features/auth/` with the default stack (**Bloc** on, **Cubit** off), remote datasource, repository, use case, and presentation files. With `--tests`, matching files are added under `test/features/auth/`.
+## Features
+
+- **4 presentation styles:** `--bloc`, `--cubit` (default), `--list-cubit`, `--presentation-only`
+- **CRUD operations:** `--get`, `--create`, `--update`, `--delete`
+- **JSON model generation:** `--json '{"id": "String", "name": "String"}'`
+- **Freezed support:** `--freezed` (default: on)
+- **Injectable DI:** `--injectable` (default: on)
+- **Mapper generation:** `--mapper` (default: on)
+- **Mock datasources:** `--mock` (default: on)
+- **List vs single:** `--list true/false`
 
 ---
 
 ## Examples
 
 ```bash
-# Default: Bloc presentation, no tests folder in plan unless --tests
-nexo_cli feature auth
+# Simple GET list
+nexo_cli feature products --get
 
-# Cubit instead of Bloc (mutually exclusive with default Bloc)
-nexo_cli feature auth --no-bloc --cubit
+# Single object
+nexo_cli feature profile --get --list false
 
-# User profile with Cubit and test stubs
-nexo_cli feature user_profile --no-bloc --cubit --tests
+# Full CRUD with freezed
+nexo_cli feature article --get --create --update --delete --freezed
 
-# Bloc + local datasource + UI placeholders + tests
-nexo_cli feature checkout --local --ui --tests
+# Model from JSON
+nexo_cli feature product --get --json '{"id": "String", "name": "String", "price": "double"}'
 
-# Preview paths without writing files
-nexo_cli feature auth --dry-run
+# Presentation only
+nexo_cli feature settings --presentation-only --preferences --ui
 
-# Overwrite existing generated files
-nexo_cli feature auth --overwrite
+# NexoListCubit for simple lists
+nexo_cli feature notification --list-cubit --get
+
+# Everything combined
+nexo_cli feature order --bloc --freezed --json '{"id": "String"}' --get --create --update --delete --tests
 ```
 
 ---
 
-## Command-line options
+## Command-line Options
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--bloc` / `--no-bloc` | Bloc **on** | Generate Bloc files under `presentation/bloc/`. |
-| `--cubit` / `--no-cubit` | Cubit **off** | Generate Cubit files under `presentation/cubit/`. |
-| `--tests` | off | Add planned files under `test/features/<name>/`. |
-| `--local` | off | Include a local datasource file in `data/datasources/`. |
-| `--ui` | off | Include `presentation/pages/` and `presentation/widgets/` stubs. |
-| `--dry-run` (`-n`) | off | Print what would be created; **no** files written. |
-| `--overwrite` | off | Replace existing files; without it, existing files are **skipped**. |
+| `--bloc` | off | Generate Bloc with events/states |
+| `--cubit` | on* | Generate Cubit with state |
+| `--list-cubit` | off | Generate NexoListCubit |
+| `--presentation-only` | off | Only presentation layer |
+| `--freezed` / `--no-freezed` | on | Use @freezed |
+| `--injectable` / `--no-injectable` | on | Use @injectable |
+| `--mapper` / `--no-mapper` | on | Generate mappers |
+| `--mock` / `--no-mock` | on | Generate mock datasources |
+| `--get` | off | Generate GET use case |
+| `--create` | off | Generate CREATE use case + request DTO |
+| `--update` | off | Generate UPDATE use case + request DTO |
+| `--delete` | off | Generate DELETE use case |
+| `--json '{...}'` | - | Generate model from JSON fields |
+| `--list true/false` | true | List vs single object |
+| `--local` | off | Include local datasource |
+| `--preferences` | off | Generate preferences wrapper |
+| `--extensions` | off | Generate entity extensions |
+| `--ui` | off | Generate pages/ and widgets/ |
+| `--tests` | off | Generate test files |
+| `--dry-run` (`-n`) | off | Preview without writing |
+| `--overwrite` | off | Overwrite existing files |
 
-**Presentation:** exactly one of Bloc or Cubit must be enabled. Default is Bloc only; use `--no-bloc --cubit` for Cubit-only.
+*cubit is default when no style is specified.
 
 ---
 
-## Generated feature layout (example)
+## Generated Structure
 
-For `nexo_cli feature auth` (Bloc, no `--local`, no `--ui`, no `--tests`), paths are relative to `lib/features/auth/`:
-
-```text
-lib/features/auth/
+```
+lib/features/<name>/
 ├── data/
-│   ├── datasources/
-│   │   └── auth_remote_datasource.dart
+│   ├── datasources/     # interfaces, impl, mock
+│   ├── models/          # model + requests/
+│   ├── mappers/         # extension toDomain()
 │   └── repositories/
-│       └── auth_repository_impl.dart
 ├── domain/
 │   ├── entities/
-│   │   └── auth_entity.dart
-│   ├── repositories/
-│   │   └── auth_repository.dart
-│   └── usecases/
-│       └── get_auth_usecase.dart
+│   ├── repositories/    # interface
+│   ├── usecases/
+│   └── parameters/
 └── presentation/
-    └── bloc/
-        ├── auth_bloc.dart
-        ├── auth_event.dart
-        └── auth_state.dart
+    ├── bloc/ or cubit/
+    └── <name>_screen.dart
 ```
 
-With `--tests`, analogous files appear under `test/features/auth/` (repository, use case, bloc/cubit tests as planned).
-
 ---
 
-## Clean Architecture (short)
+## Documentation
 
-- **Domain:** entities and repository contracts; use cases orchestrate business rules.
-- **Data:** repository implementations and datasources (remote/local) map APIs or storage to domain models.
-- **Presentation:** Bloc or Cubit reacts to user events and drives UI state (here aligned with `NexoAsyncState` patterns).
+See [DOCUMENTATION.md](DOCUMENTATION.md) for the complete guide with:
 
-The generator gives you a consistent folder layout and starter types so you can focus on real endpoints and UI.
-
----
-
-## Sample generated Cubit (excerpt)
-
-After `nexo_cli feature auth --no-bloc --cubit`, the Cubit extends `NexoCubit<AuthState>` with `AuthState` as `NexoAsyncState<AuthEntity>`, injects `GetAuthUseCase` and `NexoLogger`, and exposes a minimal `load()` calling `executeEither<AuthEntity>(...)`. Imports use `package:nexo/nexo_core.dart`, `package:nexo/nexo_errors.dart`, and `package:nexo/nexo_logger.dart` as in the templates.
-
-Bloc mode is analogous: `NexoBloc<AuthEvent, AuthState>`, sealed events (e.g. `LoadAuth`), and `on<LoadAuth>` handling.
+- All flags and options
+- Architecture explanation
+- JSON field generation
+- CRUD operations
+- Code templates
+- Post-generation steps
+- FAQ
 
 ---
 
 ## Development
-
-From this package directory (`packages/nexo_cli` in the monorepo, or your clone root):
 
 ```bash
 dart pub get
@@ -137,12 +144,6 @@ dart format .
 dart analyze
 dart test
 ```
-
-### Before publishing to pub.dev
-
-1. Replace `repository` / `homepage` in `pubspec.yaml` with your real Git URL (currently placeholders).
-2. Run `dart format .`, `dart analyze`, and `dart test` with a clean checkout.
-3. Follow [Publishing a package](https://dart.dev/tools/pub/publishing): `dart pub publish --dry-run`, then `dart pub publish` when satisfied.
 
 ---
 

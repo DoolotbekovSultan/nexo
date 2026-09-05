@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.0
+
+- **Breaking:** cubit is now the default presentation style (was bloc).
+- New `--bloc` / `--cubit` / `--list-cubit` flags for presentation style selection.
+- New `--presentation-only` flag for UI-only features.
+- New `--freezed` / `--no-freezed` flag (default: on).
+- New `--injectable` / `--no-injectable` flag (default: on).
+- New `--mapper` / `--no-mapper` flag (default: on).
+- New `--mock` / `--no-mock` flag (default: on).
+- New `--get` / `--create` / `--update` / `--delete` flags for CRUD operations.
+- New `--json '{...}'` flag to generate model fields from JSON.
+- New `--list true/false` flag for list vs single object.
+- New `--preferences` flag for SharedPreferences wrapper.
+- New `--extensions` flag for entity extensions.
+- New `--ui` flag for pages and widgets.
+- Interface-based datasource pattern (`i_remote_*`, `i_local_*`).
+- Mock datasource generation with environment-conditional DI.
+- Request DTOs for create/update operations.
+- Domain parameters for use cases.
+- Updated templates to match nexo patterns (easycoins, niet_media).
+- Added comprehensive documentation (`DOCUMENTATION.md`).
+- Added example features with real generated code.
+- 88 tests passing.
+
 ## 0.1.0
 
 - Initial release.

@@ -1,80 +1,272 @@
+import 'feature_plan.dart';
 import 'name_utils.dart';
 
-/// Simple `{{feature}}` / `{{Feature}}` / `{{featureSnake}}` substitution for
-/// feature scaffold templates.
+/// Template renderer for feature scaffold files.
 ///
-/// [relativePosixPath] is relative to `lib/features/<snake>/` or
-/// `test/features/<snake>/`, using `/` as separator.
+/// Picks the right template based on file path and renders substitutions.
 abstract final class TemplateRenderer {
   TemplateRenderer._();
 
   /// Renders Dart source for a planned feature file.
-  static String render(String relativePosixPath, NameUtils names) {
+  static String render(
+    String relativePosixPath,
+    NameUtils names,
+    FeatureOptions options,
+  ) {
     final norm = relativePosixPath.replaceAll(r'\', '/');
-    final template = _pickTemplate(norm);
-    return _substitute(template, names);
+    final template = _pickTemplate(norm, options);
+    return _substitute(template, names, options);
   }
 
-  static String _pickTemplate(String norm) {
+  static String _pickTemplate(String norm, FeatureOptions options) {
+    // ── Tests ──
     if (norm.endsWith('_test.dart')) {
+      if (norm.contains('mapper')) return _tplMapperTest;
       return _tplTest;
     }
+
+    // ── Preferences ──
+    if (norm.endsWith('_preferences.dart')) return _tplPreferences;
+
+    // ── Extensions ──
+    if (norm.endsWith('_extensions.dart')) return _tplExtensions;
+
+    // ── Screen (presentation-only) ──
+    if (norm.endsWith('_screen.dart')) return _tplScreen;
+
+    // ── Entity ──
     if (norm.endsWith('_entity.dart')) {
+      if (options.freezed) return _tplEntityFreezed;
       return _tplEntity;
     }
-    if (norm.endsWith('_page.dart')) {
-      return _tplPage;
+
+    // ── Model ──
+    if (norm.contains('data/models/') && norm.endsWith('_model.dart')) {
+      if (options.freezed) return _tplModelFreezed;
+      return _tplModel;
     }
-    if (norm.endsWith('_widget.dart')) {
-      return _tplWidget;
+
+    // ── Request DTOs ──
+    if (norm.contains('models/requests/') &&
+        norm.startsWith('models/requests/create_')) {
+      if (options.freezed) return _tplCreateRequestFreezed;
+      return _tplCreateRequest;
     }
-    if (norm.endsWith('_local_datasource.dart')) {
-      return _tplLocalDatasource;
+    if (norm.contains('models/requests/') &&
+        norm.startsWith('models/requests/update_')) {
+      if (options.freezed) return _tplUpdateRequestFreezed;
+      return _tplUpdateRequest;
     }
-    if (norm.endsWith('_remote_datasource.dart')) {
-      return _tplRemoteDatasource;
+
+    // ── Datasource interfaces ──
+    if (norm.contains('datasources/i_remote_')) {
+      return _tplRemoteDatasourceInterface;
     }
+    if (norm.contains('datasources/i_local_')) {
+      return _tplLocalDatasourceInterface;
+    }
+
+    // ── Datasources ──
+    if (norm.contains('datasources/mock_') &&
+        norm.endsWith('_remote_data_source.dart')) {
+      return _tplMockRemoteDatasource;
+    }
+    if (norm.contains('datasources/mock_') &&
+        norm.endsWith('_local_data_source.dart')) {
+      return _tplMockLocalDatasource;
+    }
+    if (norm.endsWith('_remote_datasource.dart')) return _tplRemoteDatasource;
+    if (norm.endsWith('_local_datasource.dart')) return _tplLocalDatasource;
+
+    // ── Mappers ──
+    if (norm.contains('mappers/') && norm.endsWith('_mapper.dart')) {
+      return _tplMapper;
+    }
+
+    // ── Repository interface (domain) ──
     if (norm.contains('domain/repositories/') &&
-        norm.endsWith('_repository.dart')) {
-      return _tplRepository;
+        norm.startsWith('domain/repositories/i_')) {
+      return _tplRepositoryInterface;
     }
+
+    // ── Repository impl (data) ──
     if (norm.contains('data/repositories/') &&
-        norm.endsWith('_repository_impl.dart')) {
+        norm.endsWith('_repository.dart')) {
       return _tplRepositoryImpl;
     }
+
+    // ── UseCase (get) ──
     if (norm.contains('domain/usecases/') &&
         norm.startsWith('domain/usecases/get_')) {
       return _tplUseCase;
     }
+
+    // ── CRUD UseCases ──
+    if (norm.contains('domain/usecases/') && norm.endsWith('_usecases.dart')) {
+      return _tplCrudUseCases;
+    }
+
+    // ── Parameters ──
+    if (norm.contains('domain/parameters/') &&
+        norm.startsWith('domain/parameters/create_')) {
+      return _tplCreateParams;
+    }
+    if (norm.contains('domain/parameters/') &&
+        norm.startsWith('domain/parameters/update_')) {
+      return _tplUpdateParams;
+    }
+
+    // ── Bloc ──
     if (norm.contains('presentation/bloc/') && norm.endsWith('_event.dart')) {
       return _tplBlocEvent;
     }
     if (norm.contains('presentation/bloc/') && norm.endsWith('_bloc.dart')) {
       return _tplBloc;
     }
+
+    // ── Cubit ──
     if (norm.contains('presentation/cubit/') && norm.endsWith('_cubit.dart')) {
+      if (options.hasListCubit) return _tplListCubit;
       return _tplCubit;
     }
+
+    // ── State ──
     if (norm.endsWith('_state.dart') &&
         (norm.contains('presentation/bloc/') ||
             norm.contains('presentation/cubit/'))) {
+      if (options.freezed) return _tplStateFreezed;
       return _tplState;
     }
+
+    // ── UI ──
+    if (norm.endsWith('_page.dart')) return _tplPage;
+    if (norm.endsWith('_widget.dart')) return _tplWidget;
+
     return _tplFallback;
   }
 
-  static String _substitute(String template, NameUtils names) {
-    return template
+  static String _substitute(
+    String template,
+    NameUtils names,
+    FeatureOptions options,
+  ) {
+    // Generate field declarations from JSON.
+    final fieldsDecl = _generateFieldsDecl(options.jsonFields);
+    final fieldsCtor = _generateFieldsCtor(options.jsonFields);
+    final fieldsJson = _generateFieldsJson(options.jsonFields);
+    final fieldsFromJson = _generateFieldsFromJson(options.jsonFields);
+    final entityFields = _generateEntityFields(options.jsonFields);
+    final mapperFields = _generateMapperFields(options.jsonFields);
+    final requestFields = _generateRequestFields(options.jsonFields);
+
+    // Return type.
+    final retType = options.returnType(names);
+
+    // First: substitute generated content blocks.
+    var result = template
+        .replaceAll('{{fieldsDecl}}', fieldsDecl)
+        .replaceAll('{{fieldsCtor}}', fieldsCtor)
+        .replaceAll('{{fieldsJson}}', fieldsJson)
+        .replaceAll('{{fieldsFromJson}}', fieldsFromJson)
+        .replaceAll('{{entityFields}}', entityFields)
+        .replaceAll('{{mapperFields}}', mapperFields)
+        .replaceAll('{{requestFields}}', requestFields)
+        .replaceAll('{{retType}}', retType);
+
+    // Second: substitute name placeholders (after content blocks are inserted).
+    result = result
         .replaceAll('{{featureSnake}}', names.snakeCase)
         .replaceAll('{{Feature}}', names.pascalCase)
         .replaceAll('{{feature}}', _snakeToLowerCamel(names.snakeCase));
+
+    return result;
+  }
+
+  // ── JSON field generators ────────────────────────────────────────────────
+
+  static String _generateFieldsDecl(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) return '  final String id;';
+    return fields.entries.map((e) => '  final ${e.value} ${e.key};').join('\n');
+  }
+
+  static String _generateFieldsCtor(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) {
+      return '  const {{Feature}}Model({required this.id});';
+    }
+    final params = fields.keys.map((k) => 'required this.$k').join(', ');
+    return '  const {{Feature}}Model({$params});';
+  }
+
+  static String _generateFieldsJson(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) {
+      return "    return {'id': id};";
+    }
+    final entries = fields.keys.map((k) => "'$k': $k").join(', ');
+    return '    return {$entries};';
+  }
+
+  static String _generateFieldsFromJson(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) {
+      return "    return {{Feature}}Model(id: json['id'] as String? ?? '');";
+    }
+    final assignments = fields.entries
+        .map((e) {
+          final name = e.key;
+          final type = e.value;
+          if (type == 'int') {
+            return "$name: (json['$name'] as num?)?.toInt() ?? 0";
+          }
+          if (type == 'double') {
+            return "$name: (json['$name'] as num?)?.toDouble() ?? 0.0";
+          }
+          if (type == 'bool') {
+            return "$name: json['$name'] as bool? ?? false";
+          }
+          if (type == 'List<dynamic>') {
+            return "$name: json['$name'] as List<dynamic>? ?? const []";
+          }
+          if (type == 'Map<String, dynamic>') {
+            return "$name: json['$name'] as Map<String, dynamic>? ?? const {}";
+          }
+          return "$name: json['$name'] as String? ?? ''";
+        })
+        .join(',\n    ');
+    return '    return {{Feature}}Model(\n    $assignments,\n    );';
+  }
+
+  static String _generateEntityFields(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) {
+      return '  const {{Feature}}Entity({required this.id});\n  final String id;';
+    }
+    final params = fields.keys.map((k) => 'required this.$k').join(', ');
+    final decls = fields.entries
+        .map((e) => '  final ${e.value} ${e.key};')
+        .join('\n');
+    return '  const {{Feature}}Entity({$params});\n$decls';
+  }
+
+  static String _generateMapperFields(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) {
+      return '  {{Feature}}Entity toDomain() => {{Feature}}Entity(id: id);';
+    }
+    final assigns = fields.keys.map((k) => '$k: $k').join(', ');
+    return '  {{Feature}}Entity toDomain() => {{Feature}}Entity($assigns);';
+  }
+
+  static String _generateRequestFields(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) {
+      return '  const {{RequestType}}({required this.id});\n  final String id;';
+    }
+    final params = fields.keys.map((k) => 'required this.$k').join(', ');
+    final decls = fields.entries
+        .map((e) => '  final ${e.value} ${e.key};')
+        .join('\n');
+    return '  const {{RequestType}}({$params});\n$decls';
   }
 
   static String _snakeToLowerCamel(String snake) {
     final parts = snake.split('_').where((w) => w.isNotEmpty).toList();
-    if (parts.isEmpty) {
-      return snake;
-    }
+    if (parts.isEmpty) return snake;
     return parts.first +
         parts
             .skip(1)
@@ -83,198 +275,621 @@ abstract final class TemplateRenderer {
   }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Fallback
+// ──────────────────────────────────────────────────────────────────────────────
+
 const _tplFallback = r'''
 // Placeholder generated by nexo_cli for {{featureSnake}}.
 ''';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Preferences
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplPreferences = r'''
+import 'package:shared_preferences/shared_preferences.dart';
+
+class {{Feature}}Preferences {
+  static const _key = '{{featureSnake}}_completed';
+
+  static Future<bool> isCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_key) ?? false;
+  }
+
+  static Future<void> setCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_key, true);
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Extensions
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplExtensions = r'''
+import '../entities/{{featureSnake}}_entity.dart';
+
+extension {{Feature}}Extensions on {{Feature}}Entity {
+  // TODO(nexo): add convenience getters here.
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Screen (presentation-only)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplScreen = r'''
+import 'package:flutter/material.dart';
+
+class {{Feature}}Screen extends StatefulWidget {
+  const {{Feature}}Screen({super.key});
+
+  @override
+  State<{{Feature}}Screen> createState() => _{{Feature}}ScreenState();
+}
+
+class _{{Feature}}ScreenState extends State<{{Feature}}Screen> {
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: SizedBox.shrink());
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Entity (plain)
+// ──────────────────────────────────────────────────────────────────────────────
+
 const _tplEntity = r'''
 class {{Feature}}Entity {
-  const {{Feature}}Entity({required this.id});
-  final String id;
+{{entityFields}}
 }
 ''';
 
-const _tplRepository = r'''
-import 'package:nexo/nexo_errors.dart';
+// ──────────────────────────────────────────────────────────────────────────────
+// Entity (freezed)
+// ──────────────────────────────────────────────────────────────────────────────
 
-import '../entities/{{featureSnake}}_entity.dart';
+const _tplEntityFreezed = r'''
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-abstract interface class {{Feature}}Repository {
-  Future<Result<{{Feature}}Entity>> get{{Feature}}();
+part '{{featureSnake}}_entity.freezed.dart';
+
+@freezed
+abstract class {{Feature}}Entity with _${{Feature}}Entity {
+  const factory {{Feature}}Entity({
+{{fieldsDecl}}
+  }) = _{{Feature}}Entity;
 }
 ''';
 
-const _tplRepositoryImpl = r'''
-import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_errors.dart';
+// ──────────────────────────────────────────────────────────────────────────────
+// Model (plain)
+// ──────────────────────────────────────────────────────────────────────────────
 
-import '../../domain/entities/{{featureSnake}}_entity.dart';
-import '../../domain/repositories/{{featureSnake}}_repository.dart';
-import '../datasources/{{featureSnake}}_remote_datasource.dart';
+const _tplModel = r'''
+class {{Feature}}Model {
+{{fieldsCtor}}
+{{fieldsDecl}}
 
-class {{Feature}}RepositoryImpl implements {{Feature}}Repository {
-  {{Feature}}RepositoryImpl({required {{Feature}}RemoteDataSource remote})
-      : _remote = remote;
-
-  final {{Feature}}RemoteDataSource _remote;
-
-  @override
-  Future<Result<{{Feature}}Entity>> get{{Feature}}() async {
-    try {
-      final model = await _remote.fetch{{Feature}}();
-      return Right(_mapModelToEntity(model));
-    } catch (e, s) {
-      return Left(e.toFailure(s));
-    }
+  factory {{Feature}}Model.fromJson(Map<String, dynamic> json) {
+{{fieldsFromJson}}
   }
 
-  {{Feature}}Entity _mapModelToEntity({{Feature}}Model model) {
-    // TODO(nexo): extend mapping when {{Feature}}Model gains fields beyond id.
-    return {{Feature}}Entity(id: model.id);
+  Map<String, dynamic> toJson() {
+{{fieldsJson}}
   }
 }
 ''';
 
-const _tplUseCase = r'''
-import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_errors.dart';
-import 'package:nexo/nexo_logger.dart';
+// ──────────────────────────────────────────────────────────────────────────────
+// Model (freezed)
+// ──────────────────────────────────────────────────────────────────────────────
 
-import '../entities/{{featureSnake}}_entity.dart';
-import '../repositories/{{featureSnake}}_repository.dart';
+const _tplModelFreezed = r'''
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-class Get{{Feature}}UseCase extends NexoUseCase<{{Feature}}Entity, NoParams> {
-  Get{{Feature}}UseCase({
-    required NexoLogger logger,
-    required {{Feature}}Repository repository,
-  })  : _repository = repository,
-        super(logger);
+part '{{featureSnake}}_model.freezed.dart';
+part '{{featureSnake}}_model.g.dart';
 
-  final {{Feature}}Repository _repository;
+@freezed
+abstract class {{Feature}}Model with _${{Feature}}Model {
+  const factory {{Feature}}Model({
+{{fieldsDecl}}
+  }) = _{{Feature}}Model;
 
-  @override
-  Future<{{Feature}}Entity> execute(NoParams params) async {
-    final result = await _repository.get{{Feature}}();
-    return result.fold((failure) => throw failure, (entity) => entity);
+  factory {{Feature}}Model.fromJson(Map<String, dynamic> json) =>
+      _${{Feature}}ModelFromJson(json);
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Request DTOs
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplCreateRequest = r'''
+class Create{{Feature}}Request {
+{{requestFields}}
+
+  Map<String, dynamic> toJson() {
+{{fieldsJson}}
   }
 }
 ''';
+
+const _tplCreateRequestFreezed = r'''
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'create_{{featureSnake}}_request.freezed.dart';
+part 'create_{{featureSnake}}_request.g.dart';
+
+@freezed
+abstract class Create{{Feature}}Request with _Create{{Feature}}Request {
+  const factory Create{{Feature}}Request({
+{{fieldsDecl}}
+  }) = _Create{{Feature}}Request;
+
+  factory Create{{Feature}}Request.fromJson(Map<String, dynamic> json) =>
+      _Create{{Feature}}RequestFromJson(json);
+}
+''';
+
+const _tplUpdateRequest = r'''
+class Update{{Feature}}Request {
+{{requestFields}}
+
+  Map<String, dynamic> toJson() {
+{{fieldsJson}}
+  }
+}
+''';
+
+const _tplUpdateRequestFreezed = r'''
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'update_{{featureSnake}}_request.freezed.dart';
+part 'update_{{featureSnake}}_request.g.dart';
+
+@freezed
+abstract class Update{{Feature}}Request with _Update{{Feature}}Request {
+  const factory Update{{Feature}}Request({
+{{fieldsDecl}}
+  }) = _Update{{Feature}}Request;
+
+  factory Update{{Feature}}Request.fromJson(Map<String, dynamic> json) =>
+      _Update{{Feature}}RequestFromJson(json);
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Datasource interfaces
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplRemoteDatasourceInterface = r'''
+import '../models/{{featureSnake}}_model.dart';
+
+abstract interface class IRemote{{Feature}}DataSource {
+  Future<{{retType}}> getAll();
+}
+''';
+
+const _tplLocalDatasourceInterface = r'''
+import '../models/{{featureSnake}}_model.dart';
+
+abstract interface class ILocal{{Feature}}DataSource {
+  Future<{{retType}}> getAll();
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Remote datasource
+// ──────────────────────────────────────────────────────────────────────────────
 
 const _tplRemoteDatasource = r'''
 import 'package:nexo/nexo_core.dart';
 import 'package:nexo/nexo_logger.dart';
+import 'package:injectable/injectable.dart';
 
-class {{Feature}}Model {
-  const {{Feature}}Model({required this.id});
-  final String id;
+import 'i_remote_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
 
-  factory {{Feature}}Model.fromJson(Map<String, dynamic> json) {
-    return {{Feature}}Model(id: json['id'] as String? ?? '');
-  }
-
-  Map<String, dynamic> toJson() => <String, dynamic>{'id': id};
-}
-
-class {{Feature}}RemoteDataSource extends BaseRemoteDataSource {
+@LazySingleton(as: IRemote{{Feature}}DataSource, env: [AppEnvironment.prod])
+class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
+    implements IRemote{{Feature}}DataSource {
   {{Feature}}RemoteDataSource(super.client, {required super.logger});
 
-  // TODO(nexo): implement network call when the endpoint is available.
-  Future<{{Feature}}Model> fetch{{Feature}}() async {
-    throw UnimplementedError('{{Feature}}RemoteDataSource.fetch{{Feature}}');
+  @override
+  Future<{{retType}}> getAll() async {
+    final response = await get('{{featureSnake}}/');
+    final data = response.data;
+    if (data is! List) return const [];
+    return List.from(data)
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
   }
 }
 ''';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Local datasource
+// ──────────────────────────────────────────────────────────────────────────────
+
 const _tplLocalDatasource = r'''
-class {{Feature}}LocalDataSource {
-  const {{Feature}}LocalDataSource();
+import 'package:nexo/nexo_core.dart';
+import 'package:nexo/nexo_logger.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource, env: [AppEnvironment.prod])
+class {{Feature}}LocalDataSource extends BaseLocalDataSource
+    implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required super.logger});
+
+  @override
+  Future<{{retType}}> getAll() async {
+    // TODO(nexo): implement local storage read.
+    return const [];
+  }
 }
 ''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Mock remote datasource
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplMockRemoteDatasource = r'''
+import 'package:injectable/injectable.dart';
+
+import 'i_remote_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: IRemote{{Feature}}DataSource, env: [AppEnvironment.mock])
+class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
+  @override
+  Future<{{retType}}> getAll() async {
+    return const [];
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Mock local datasource
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplMockLocalDatasource = r'''
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource, env: [AppEnvironment.mock])
+class Mock{{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  @override
+  Future<{{retType}}> getAll() async {
+    return const [];
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Mapper
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplMapper = r'''
+import '../models/{{featureSnake}}_model.dart';
+import '../entities/{{featureSnake}}_entity.dart';
+
+extension {{Feature}}Mapper on {{Feature}}Model {
+{{mapperFields}}
+}
+
+extension {{Feature}}ListMapper on List<{{Feature}}Model> {
+  List<{{Feature}}Entity> toDomain() => map((e) => e.toDomain()).toList();
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Repository interface (domain)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplRepositoryInterface = r'''
+import '../entities/{{featureSnake}}_entity.dart';
+
+abstract interface class I{{Feature}}Repository {
+  Future<{{retType}}> getAll();
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Repository impl (data)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplRepositoryImpl = r'''
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
+import '../datasources/i_remote_{{featureSnake}}_data_source.dart';
+
+@LazySingleton(as: I{{Feature}}Repository)
+class {{Feature}}Repository implements I{{Feature}}Repository {
+  {{Feature}}Repository({required this._remoteDatasource});
+
+  final IRemote{{Feature}}DataSource _remoteDatasource;
+
+  @override
+  Future<{{retType}}> getAll() async {
+    final models = await _remoteDatasource.getAll();
+    return models.toDomain();
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UseCase (get)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplUseCase = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+@injectable
+class Get{{Feature}}UseCase extends NexoUseCase<{{retType}}, NoParams> {
+  Get{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<{{retType}}> execute(NoParams params) async {
+    return await _repository.getAll();
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// CRUD UseCases
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplCrudUseCases = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+@injectable
+class Create{{Feature}}UseCase
+    extends NexoUseCase<{{Feature}}Entity, Create{{Feature}}Params> {
+  Create{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<{{Feature}}Entity> execute(Create{{Feature}}Params params) async {
+    // TODO(nexo): implement create.
+    throw UnimplementedError();
+  }
+}
+
+@injectable
+class Update{{Feature}}UseCase
+    extends NexoUseCase<{{Feature}}Entity, Update{{Feature}}Params> {
+  Update{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<{{Feature}}Entity> execute(Update{{Feature}}Params params) async {
+    // TODO(nexo): implement update.
+    throw UnimplementedError();
+  }
+}
+
+@injectable
+class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
+  Delete{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<void> execute(String id) async {
+    // TODO(nexo): implement delete.
+    throw UnimplementedError();
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Parameters
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplCreateParams = r'''
+class Create{{Feature}}Params {
+  const Create{{Feature}}Params({required this.id});
+  final String id;
+}
+''';
+
+const _tplUpdateParams = r'''
+class Update{{Feature}}Params {
+  const Update{{Feature}}Params({required this.id});
+  final String id;
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// State (plain)
+// ──────────────────────────────────────────────────────────────────────────────
 
 const _tplState = r'''
 import 'package:nexo/nexo_core.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+
+typedef {{Feature}}State = NexoAsyncState<{{retType}}>;
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// State (freezed)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplStateFreezed = r'''
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:nexo/nexo_errors.dart';
 
 import '../../domain/entities/{{featureSnake}}_entity.dart';
 
-typedef {{Feature}}State = NexoAsyncState<{{Feature}}Entity>;
+part '{{featureSnake}}_state.freezed.dart';
+
+@freezed
+abstract class {{Feature}}State with _${{Feature}}State {
+  const factory {{Feature}}State.loading() = _{{Feature}}StateLoading;
+  const factory {{Feature}}State.success({required {{retType}} data}) =
+      _{{Feature}}StateSuccess;
+  const factory {{Feature}}State.error({Failure? failure}) = _{{Feature}}StateError;
+}
 ''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Bloc event (freezed)
+// ──────────────────────────────────────────────────────────────────────────────
 
 const _tplBlocEvent = r'''
-sealed class {{Feature}}Event {}
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-final class Load{{Feature}} extends {{Feature}}Event {}
+part '{{featureSnake}}_event.freezed.dart';
+
+@freezed
+abstract class {{Feature}}Event with _${{Feature}}Event {
+  const factory {{Feature}}Event.load() = _{{Feature}}Load;
+}
 ''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Bloc
+// ──────────────────────────────────────────────────────────────────────────────
 
 const _tplBloc = r'''
 import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_errors.dart';
-import 'package:nexo/nexo_logger.dart';
+import 'package:injectable/injectable.dart';
 
+import '../../domain/entities/{{featureSnake}}_entity.dart';
 import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
 import '{{featureSnake}}_event.dart';
 import '{{featureSnake}}_state.dart';
 
+@injectable
 class {{Feature}}Bloc extends NexoBloc<{{Feature}}Event, {{Feature}}State> {
   {{Feature}}Bloc({
     required Get{{Feature}}UseCase get{{Feature}}UseCase,
-    required NexoLogger logger,
   })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
-        _logger = logger,
-        super(const NexoAsyncIdle<{{Feature}}Entity>()) {
-    on<Load{{Feature}}>(_onLoad);
-    _logger.debug('{{Feature}}Bloc ready');
+        super(const {{Feature}}State.loading()) {
+    on<{{Feature}}Event>(_onEvent);
   }
 
   final Get{{Feature}}UseCase _get{{Feature}}UseCase;
-  final NexoLogger _logger;
 
-  Future<void> _onLoad(
-    Load{{Feature}} event,
+  Future<void> _onEvent(
+    {{Feature}}Event event,
     Emitter<{{Feature}}State> emit,
   ) async {
-    await executeEither<{{Feature}}Entity>(
+    await event.when(load: () => _onLoad(emit));
+  }
+
+  Future<void> _onLoad(Emitter<{{Feature}}State> emit) async {
+    await executeEither<{{retType}}>(
       emit: emit,
       action: () => _get{{Feature}}UseCase(const NoParams()),
-      onLoading: () => const NexoAsyncLoading<{{Feature}}Entity>(),
-      onSuccess: (data) => NexoAsyncSuccess<{{Feature}}Entity>(data),
-      onError: (failure) => NexoAsyncFailure<{{Feature}}Entity>(failure),
+      onLoading: () => const {{Feature}}State.loading(),
+      onSuccess: (data) => {{Feature}}State.success(data: data),
+      onError: (failure) => {{Feature}}State.error(failure: failure),
     );
   }
 }
 ''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Cubit
+// ──────────────────────────────────────────────────────────────────────────────
 
 const _tplCubit = r'''
 import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_errors.dart';
-import 'package:nexo/nexo_logger.dart';
+import 'package:injectable/injectable.dart';
 
+import '../../domain/entities/{{featureSnake}}_entity.dart';
 import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
 import '{{featureSnake}}_state.dart';
 
+@injectable
 class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
   {{Feature}}Cubit({
     required Get{{Feature}}UseCase get{{Feature}}UseCase,
-    required NexoLogger logger,
   })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
-        _logger = logger,
-        super(const NexoAsyncIdle<{{Feature}}Entity>()) {
-    _logger.debug('{{Feature}}Cubit ready');
-  }
+        super(const {{Feature}}State.loading());
 
   final Get{{Feature}}UseCase _get{{Feature}}UseCase;
-  final NexoLogger _logger;
 
   Future<void> load() async {
-    await executeEither<{{Feature}}Entity>(
+    await executeEither<{{retType}}>(
       action: () => _get{{Feature}}UseCase(const NoParams()),
-      onLoading: () => const NexoAsyncLoading<{{Feature}}Entity>(),
-      onSuccess: (data) => NexoAsyncSuccess<{{Feature}}Entity>(data),
-      onError: (failure) => NexoAsyncFailure<{{Feature}}Entity>(failure),
+      onLoading: () => const {{Feature}}State.loading(),
+      onSuccess: (data) => {{Feature}}State.success(data: data),
+      onError: (failure) => {{Feature}}State.error(failure: failure),
     );
   }
 }
 ''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ListCubit
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplListCubit = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
+
+@injectable
+class {{Feature}}Cubit extends NexoListCubit<{{Feature}}Entity> {
+  {{Feature}}Cubit({
+    required Get{{Feature}}UseCase get{{Feature}}UseCase,
+  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase;
+
+  final Get{{Feature}}UseCase _get{{Feature}}UseCase;
+
+  @override
+  Future<List<{{Feature}}Entity>> fetch() async {
+    return await _get{{Feature}}UseCase(const NoParams());
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Page
+// ──────────────────────────────────────────────────────────────────────────────
 
 const _tplPage = r'''
 import 'package:flutter/material.dart';
@@ -289,6 +904,10 @@ class {{Feature}}Page extends StatelessWidget {
 }
 ''';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Widget
+// ──────────────────────────────────────────────────────────────────────────────
+
 const _tplWidget = r'''
 import 'package:flutter/material.dart';
 
@@ -302,12 +921,33 @@ class {{Feature}}Widget extends StatelessWidget {
 }
 ''';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Tests
+// ──────────────────────────────────────────────────────────────────────────────
+
 const _tplTest = r'''
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('{{featureSnake}} smoke', () {
     expect(true, isTrue);
+  });
+}
+''';
+
+const _tplMapperTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:{{featureSnake}}/data/models/{{featureSnake}}_model.dart';
+import 'package:{{featureSnake}}/data/mappers/{{featureSnake}}_mapper.dart';
+
+void main() {
+  group('{{Feature}}Mapper', () {
+    test('toDomain maps model to entity', () {
+      const model = {{Feature}}Model(id: '1');
+      final entity = model.toDomain();
+      expect(entity.id, '1');
+    });
   });
 }
 ''';
