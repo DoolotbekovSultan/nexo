@@ -84,7 +84,11 @@ abstract final class TemplateRenderer {
     }
     if (norm.endsWith('_remote_datasource.dart')) {
       if (!options.injectable) return _tplRemoteDatasourceNoInjectable;
-      if (options.hasMultipleDatasources) return _tplRemoteDatasourceWithMock;
+      if (options.hasMultipleDatasources) {
+        return options.isList
+            ? _tplRemoteDatasourceWithMock
+            : _tplRemoteDatasourceSingleWithMock;
+      }
       return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
     }
     if (norm.endsWith('_local_datasource.dart')) {
@@ -591,6 +595,32 @@ class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
         .whereType<Map<String, dynamic>>()
         .map({{Feature}}Model.fromJson)
         .toList();
+  }
+}
+''';
+
+const _tplRemoteDatasourceSingleWithMock = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_remote_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): replace @Named with env: [AppEnvironment.prod] if using environment-based DI.
+@Named('prod')
+@LazySingleton(as: IRemote{{Feature}}DataSource)
+class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
+    implements IRemote{{Feature}}DataSource {
+  {{Feature}}RemoteDataSource(super.client, {required super.logger});
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final response = await get('{{featureSnake}}/');
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw StateError('Expected a JSON object, got ${data.runtimeType}');
+    }
+    return {{Feature}}Model.fromJson(data);
   }
 }
 ''';
