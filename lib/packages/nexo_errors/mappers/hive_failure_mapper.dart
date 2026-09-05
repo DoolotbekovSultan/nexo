@@ -5,9 +5,29 @@ import '../types/parse_failure.dart';
 import '../types/storage_failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Специализированный маппер ошибок Hive.
+///
+/// Преобразует ошибки Hive (отсутствие бокса, повреждение данных,
+/// нехватка места, ошибки шифрования/расшифровки и т.д.) в
+/// соответствующие [Failure]. Определяет тип ошибки по ключевым словам
+/// в сообщении исключения.
+///
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+///
+/// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class HiveFailureMapper implements FailureSubMapper {
   const HiveFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это ошибка Hive.
+  ///
+  /// Анализирует тип и сообщение ошибки для определения категории:
+  /// - Отсутствие/закрытие бокса → [CacheFailure.miss]
+  /// - Повреждение данных → [StorageFailure.corrupted]
+  /// - Нехватка места → [StorageFailure.outOfSpace]
+  /// - Ошибки шифрования → [StorageFailure.encryptionError] / [decryptionError]
+  /// - Ошибки версии → [StorageFailure.versionMismatch]
+  ///
+  /// **Возвращает:** [Failure] или `null`, если ошибка не является ошибкой Hive.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     final runtime = error.runtimeType.toString().toLowerCase();

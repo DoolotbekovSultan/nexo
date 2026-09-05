@@ -4,20 +4,61 @@ import 'package:nexo/packages/nexo_errors/failure_mapper_extension.dart';
 import 'package:nexo/packages/nexo_errors/nexo_crash_reporter.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
+/// Наблюдатель за жизненным циклом BLoC/Cubit с логированием и отчётом об ошибках.
+///
+/// Реализует [BlocObserver] для автоматического логирования событий, изменений
+/// состояний и ошибок во всех BLoC/Cubit приложения. Поддерживает фильтрацию
+/// конкретных BLoC через [shouldLogBloc] и интеграцию с [NexoCrashReporter].
+///
+/// ## Пример использования
+///
+/// ```dart
+/// Bloc.observer = NexoBlocObserver(
+///   logger,
+///   crashReporter: crashReporter,
+///   logLifecycle: true,
+///   logEvents: true,
+///   logChanges: true,
+///   logErrors: true,
+/// );
+/// ```
+///
+/// См. также: [NexoLogger], [NexoCrashReporter].
 class NexoBlocObserver extends BlocObserver {
   final NexoLogger _logger;
   final NexoCrashReporter? _crashReporter;
 
+  /// Логировать создание и закрытие BLoC/Cubit. По умолчанию: `true`.
   final bool logLifecycle;
+
+  /// Логировать входящие события. По умолчанию: `true`.
   final bool logEvents;
+
+  /// Логировать изменения состояний. По умолчанию: `true`.
   final bool logChanges;
+
+  /// Логировать ошибки. По умолчанию: `true`.
   final bool logErrors;
 
+  /// Максимальная длина логируемого значения в символах.
+  /// Значения длиннее этого обрезаются. По умолчанию: 1000.
   final int maxLogLength;
 
-  /// Можно фильтровать конкретные Bloc/Cubit
+  /// Фильтр для определения, нужно ли логировать данный BLoC/Cubit.
+  ///
+  /// Если не задан, логируются все BLoC/Cubit.
   final bool Function(BlocBase bloc)? shouldLogBloc;
 
+  /// Создаёт экземпляр [NexoBlocObserver].
+  ///
+  /// [_logger] — логгер для записи событий.
+  /// [crashReporter] — репортёр ошибок (опционально).
+  /// [logLifecycle] — логировать жизненный цикл. По умолчанию: `true`.
+  /// [logEvents] — логировать события. По умолчанию: `true`.
+  /// [logChanges] — логировать изменения состояний. По умолчанию: `true`.
+  /// [logErrors] — логировать ошибки. По умолчанию: `true`.
+  /// [maxLogLength] — макс. длина лога. По умолчанию: 1000.
+  /// [shouldLogBloc] — фильтр BLoC (опционально).
   NexoBlocObserver(
     this._logger, {
     NexoCrashReporter? crashReporter,

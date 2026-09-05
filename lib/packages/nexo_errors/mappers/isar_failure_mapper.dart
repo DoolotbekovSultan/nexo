@@ -4,9 +4,27 @@ import '../types/parse_failure.dart';
 import '../types/storage_failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Специализированный маппер ошибок Isar.
+///
+/// Преобразует ошибки Isar (нарушение схемы, уникальности, транзакций,
+/// повреждение БД, нехватка места и т.д.) в соответствующие [Failure].
+/// Определяет тип ошибки по ключевым словам в сообщении исключения.
+///
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+///
+/// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class IsarFailureMapper implements FailureSubMapper {
   const IsarFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это ошибка Isar.
+  ///
+  /// Анализирует тип и сообщение ошибки для определения категории:
+  /// - Нарушение схемы → [ParseFailure.schemaMismatch]
+  /// - Нарушение уникальности → [DatabaseFailure.uniqueConstraintViolation]
+  /// - Ошибка транзакции → [DatabaseFailure.transactionFailed]
+  /// - Повреждение БД → [DatabaseFailure.corrupted]
+  ///
+  /// **Возвращает:** [Failure] или `null`, если ошибка не является ошибкой Isar.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     final runtime = error.runtimeType.toString().toLowerCase();

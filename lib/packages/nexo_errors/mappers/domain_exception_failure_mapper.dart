@@ -2,9 +2,23 @@ import '../exceptions/app_exceptions.dart';
 import '../failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Маппер доменных исключений [AppException] в соответствующие [Failure].
+///
+/// Преобразует все типы [AppException] (Auth, Validation, Storage, Database,
+/// Cache, Parse, Permission, Platform, File, Location, Notification, Payment,
+/// Sync) в их функциональные аналоги [Failure]. Используется для перевода
+/// исключений доменного слоя в унифицированную модель ошибок.
+///
+/// См. также: [AppException], [FailureSubMapper].
 final class DomainExceptionFailureMapper implements FailureSubMapper {
   const DomainExceptionFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это [AppException].
+  ///
+  /// Для каждого типа [AppException] создаёт соответствующий [Failure] с
+  /// сохранением всех полей (тип, сообщение, ключ, поле и т.д.).
+  ///
+  /// **Возвращает:** [Failure] или `null`, если [error] не является [AppException].
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     return switch (error) {

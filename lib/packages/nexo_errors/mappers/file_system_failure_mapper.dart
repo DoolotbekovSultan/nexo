@@ -4,9 +4,26 @@ import '../types/storage_failure.dart';
 import 'failure_sub_mapper.dart';
 import 'platform_exceptions.dart';
 
+/// Специализированный маппер ошибок файловой системы.
+///
+/// Преобразует исключения файловой системы (включая `dart:io` через
+/// [PlatformExceptions]) в [Failure] категорий [FileFailure] и [StorageFailure].
+/// Автоматически определяет, относится ли путь к хранилищу (SharedPreferences,
+/// documents, cache и т.д.), и маппит ошибки соответственно.
+///
+/// Использует [PlatformExceptions] для кроссплатформенной идентификации
+/// ошибок файловой системы, включая `PathNotFoundException`.
+///
+/// См. также: [FailureSubMapper], [PlatformFailureMapper].
 final class FileSystemFailureMapper implements FailureSubMapper {
   const FileSystemFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это ошибка файловой системы.
+  ///
+  /// Определяет тип ошибки через [PlatformExceptions] и анализирует путь
+  /// для выбора между [FileFailure] и [StorageFailure].
+  ///
+  /// **Возвращает:** [Failure] или `null`, если ошибка не относится к файловой системе.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     final details = PlatformExceptions.fileSystemDetails(error);
@@ -18,6 +35,10 @@ final class FileSystemFailureMapper implements FailureSubMapper {
     return _mapFileSystem(details.path, details.message);
   }
 
+  /// Маппит ошибку «путь не найден» в [StorageFailure.notFound] или [FileFailure.notFound].
+  ///
+  /// Если путь относится к хранилищу, возвращает [StorageFailure.notFound],
+  /// иначе — [FileFailure.notFound].
   Failure _mapPathNotFound(String? path, String message) {
     final loweredPath = path?.toLowerCase();
 
@@ -36,6 +57,10 @@ final class FileSystemFailureMapper implements FailureSubMapper {
     );
   }
 
+  /// Маппит ошибку файловой системы в [Failure] на основе типа и пути.
+  ///
+  /// Если путь относится к хранилищу, делегирует [_mapStorageFailure],
+  /// иначе — [_mapFileType].
   Failure _mapFileSystem(String? path, String message) {
     final loweredPath = path?.toLowerCase();
     final loweredMessage = message.toLowerCase();
@@ -51,6 +76,10 @@ final class FileSystemFailureMapper implements FailureSubMapper {
     );
   }
 
+  /// Маппит ошибку хранилища в [StorageFailure] на основе текста сообщения.
+  ///
+  /// Определяет тип ошибки: permission denied, нехватка места, повреждение,
+  /// не найдено, чтение, запись, удаление.
   Failure _mapStorageFailure(
     String? path,
     String message,
@@ -123,6 +152,10 @@ final class FileSystemFailureMapper implements FailureSubMapper {
     );
   }
 
+  /// Маппит ошибку файла в [FileFailure] на основе текста сообщения.
+  ///
+  /// Определяет тип ошибки: not found, access denied, нехватка места,
+  /// копирование, перемещение, удаление, запись, чтение, директория.
   FileFailure _mapFileType(String message) {
     if (_containsAny(message, const [
       'no such file',
@@ -167,6 +200,11 @@ final class FileSystemFailureMapper implements FailureSubMapper {
     return FileFailure.readError;
   }
 
+  /// Определяет, относится ли путь к хранилищу приложения.
+  ///
+  /// Проверяет наличие ключевых слов в пути: `shared_preferences`,
+  /// `flutter_secure_storage`, `application support`, `documents`,
+  /// `library`, `cache`, `preferences`, `tmp`, `temp`, `app_flutter`.
   bool _looksLikeStoragePath(String? path) {
     if (path == null || path.isEmpty) return false;
 
@@ -184,6 +222,7 @@ final class FileSystemFailureMapper implements FailureSubMapper {
     ]);
   }
 
+  /// Проверяет, содержит ли [source] хотя бы одну строку из [patterns].
   bool _containsAny(String source, List<String> patterns) {
     for (final pattern in patterns) {
       if (source.contains(pattern)) return true;

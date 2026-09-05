@@ -21,8 +21,10 @@ sealed class Result<T> {
   /// Неудачная ветка — алиас класса [Left].
   const factory Result.failure(Failure failure) = Left<T>;
 
+  /// `true`, если результат — успех ([Right]).
   bool get isSuccess => this is Right<T>;
 
+  /// `true`, если результат — ошибка ([Left]).
   bool get isFailure => this is Left<T>;
 
   /// Значение при успехе, иначе `null`.

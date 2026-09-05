@@ -3,26 +3,72 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 
+/// Интерсептор для логирования HTTP-запросов, ответов и ошибок.
+///
+/// Логирует детальную информацию о каждом запросе: метод, URL, заголовки,
+/// тело, статус-код, время выполнения. Автоматически фильтрует
+/// чувствительные данные (токены, пароли, cookie).
+///
+/// ## Особенности
+///
+/// - Фильтрация чувствительных полей (password, token, authorization и др.).
+/// - Маскировка query-параметров с секретными значениями.
+/// - Ограничение длины тела ответа (2000 символов).
+/// - Защита от рекурсивного логирования (флаг `_isLoggingKey`).
+///
+/// ## Пример использования
+///
+/// ```dart
+/// final dio = Dio();
+/// dio.interceptors.add(
+///   NexoLoggingInterceptor(
+///     logger: TalkerLoggerAdapter(talker),
+///     logRequests: true,
+///     logResponses: true,
+///   ),
+/// );
+/// ```
+///
+/// См. также: [NexoAuthInterceptor], [NexoRetryInterceptor].
 class NexoLoggingInterceptor extends Interceptor {
   static const String _startedAtKey = '_nexo_request_started_at';
   static const String _isLoggingKey = '_nexo_is_logging';
   static const int _maxBodyLength = 2000;
 
+  /// Логгер для вывода информации.
   final NexoLogger logger;
 
+  /// Логировать запросы. По умолчанию: `true`.
   final bool logRequests;
+
+  /// Логировать заголовки запросов. По умолчанию: `true`.
   final bool logRequestHeaders;
+
+  /// Логировать тело запроса. По умолчанию: `true`.
   final bool logRequestBody;
 
+  /// Логировать ответы. По умолчанию: `true`.
   final bool logResponses;
+
+  /// Логировать заголовки ответов. По умолчанию: `false`.
   final bool logResponseHeaders;
+
+  /// Логировать тело ответа. По умолчанию: `true`.
   final bool logResponseBody;
 
+  /// Логировать ошибки. По умолчанию: `true`.
   final bool logErrors;
+
+  /// Логировать тело ответа при ошибке. По умолчанию: `true`.
   final bool logErrorResponseBody;
 
+  /// Множество имён чувствительных полей для фильтрации.
+  ///
+  /// По умолчанию: `password`, `token`, `access_token`, `refresh_token`,
+  /// `authorization`, `cookie`, `set-cookie`, `secret`, `api_key`, `apikey`.
   final Set<String> sensitiveFields;
 
+  /// Создаёт экземпляр [NexoLoggingInterceptor].
   const NexoLoggingInterceptor({
     required this.logger,
     this.logRequests = true,

@@ -28,6 +28,10 @@ Matcher isFailure({String? code}) {
   return matcher.having((r) => r.failure.code, 'failure.code', code);
 }
 
+/// Расширение для удобного извлечения данных из [Result] в тестах.
+///
+/// Если результат не соответствует ожиданию, выбрасывает [StateError]
+/// с информативным сообщением.
 extension ResultTestExpectationsX<T> on Result<T> {
   /// Значение успеха; иначе [StateError] с кодом и сообщением ошибки.
   T dataOrThrow() => switch (this) {

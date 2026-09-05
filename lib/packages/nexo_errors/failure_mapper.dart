@@ -1,4 +1,4 @@
-import 'package:nexo/packages/nexo_errors/mappers/platfrom_failure_mapper.dart';
+import 'package:nexo/packages/nexo_errors/mappers/platform_failure_mapper.dart';
 
 import 'failure.dart';
 import 'mappers/common_failure_mapper.dart';
@@ -12,6 +12,35 @@ import 'mappers/firebase_messaging_failure_mapper.dart';
 import 'mappers/hive_failure_mapper.dart';
 import 'mappers/isar_failure_mapper.dart';
 
+/// Централизованный маппер ошибок в [Failure].
+///
+/// Пробует зарегистрированные мапперы по очереди и возвращает первый
+/// успешный результат. Если ни один мапpper не распознал ошибку,
+/// возвращается [Failure.unknown].
+///
+/// ## Порядок мапперов
+///
+/// 1. [DomainExceptionFailureMapper] — кастомные исключения приложения.
+/// 2. [FirebaseAuthFailureMapper] — ошибки Firebase Auth.
+/// 3. [FirebaseMessagingFailureMapper] — ошибки Firebase Messaging.
+/// 4. [DioFailureMapper] — ошибки HTTP-клиента Dio.
+/// 5. [PlatformFailureMapper] — ошибки платформенных плагинов.
+/// 6. [HiveFailureMapper] — ошибки Hive.
+/// 7. [IsarFailureMapper] — ошибки Isar.
+/// 8. [DriftFailureMapper] — ошибки Drift/SQLite.
+/// 9. [FileSystemFailureMapper] — ошибки файловой системы.
+/// 10. [CommonFailureMapper] — универсальный catch-all.
+///
+/// ## Пример
+///
+/// ```dart
+/// try {
+///   final response = await dio.get('/api/data');
+/// } catch (e, s) {
+///   final failure = FailureMapper.from(e, s);
+///   showSnackBar(failure.userMessage);
+/// }
+/// ```
 final class FailureMapper {
   const FailureMapper._();
 
@@ -28,6 +57,13 @@ final class FailureMapper {
     CommonFailureMapper(),
   ];
 
+  /// Преобразует произвольный [error] в [Failure].
+  ///
+  /// [error] — исключение или объект ошибки.
+  /// [stackTrace] — стек вызовов (опционален, передаётся для логирования).
+  ///
+  /// **Возвращает:** [Failure] — результат маппинга.
+  /// Если [error] уже является [Failure], возвращается как есть.
   static Failure from(Object error, [StackTrace? stackTrace]) {
     if (error is Failure) return error;
 
@@ -41,11 +77,5 @@ final class FailureMapper {
       stackTrace: stackTrace,
       message: error.toString(),
     );
-  }
-}
-
-extension FailureMapperX on Object {
-  Failure toFailure([StackTrace? stackTrace]) {
-    return FailureMapper.from(this, stackTrace);
   }
 }

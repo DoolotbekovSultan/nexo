@@ -8,9 +8,28 @@ import '../types/platform_failure.dart';
 import '../types/storage_failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Специализированный маппер ошибок платформенных плагинов.
+///
+/// Преобразует [PlatformException] в соответствующие [Failure]:
+/// разрешения, геолокацию, уведомления, хранилище и т.д. Определяет
+/// тип ошибки по ключевым словам в `code`, `message` и `details`.
+///
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+///
+/// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class PlatformFailureMapper implements FailureSubMapper {
   const PlatformFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это [PlatformException].
+  ///
+  /// Анализирует code, message и details для определения категории:
+  /// - `permission`, `denied` → [Failure.permission]
+  /// - `location`, `gps` → [Failure.location]
+  /// - `notification`, `push` → [Failure.notification]
+  /// - `storage`, `keychain` → [Failure.storage]
+  /// - `not implemented` → [PlatformFailure.methodNotImplemented]
+  ///
+  /// **Возвращает:** [Failure] или `null`, если [error] не является [PlatformException].
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is! PlatformException) return null;

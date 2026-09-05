@@ -3,9 +3,26 @@ import '../types/database_failure.dart';
 import '../types/storage_failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Специализированный маппер ошибок ORM Drift (SQLite).
+///
+/// Преобразует исключения Drift/SQLite в [Failure] категорий [DatabaseFailure]
+/// и [StorageFailure]. Определяет тип ошибки по тексту сообщения: нарушение
+/// уникальности, внешнего ключа, блокировка, повреждение, нехватка места,
+/// таймаут, ошибка транзакции, миграция и операции CRUD.
+///
+/// Идентификация Drift-ошибок происходит по имени.runtimeType и тексту
+/// сообщения (contains `drift`, `sqlite`, `sql error`).
+///
+/// См. также: [FailureSubMapper], [IsarFailureMapper], [HiveFailureMapper].
 final class DriftFailureMapper implements FailureSubMapper {
   const DriftFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если ошибка связана с Drift/SQLite.
+  ///
+  /// Определяет принадлежность к Drift по имени типа и тексту сообщения.
+  /// Маппит ошибки на конкретные типы [DatabaseFailure] и [StorageFailure].
+  ///
+  /// **Возвращает:** [Failure] или `null`, если ошибка не связана с Drift.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     final runtime = error.runtimeType.toString().toLowerCase();
@@ -97,6 +114,7 @@ final class DriftFailureMapper implements FailureSubMapper {
     return const Failure.database(type: DatabaseFailure.writeError);
   }
 
+  /// Проверяет, содержит ли [source] хотя бы одну строку из [patterns].
   bool _containsAny(String source, List<String> patterns) {
     for (final pattern in patterns) {
       if (source.contains(pattern)) return true;

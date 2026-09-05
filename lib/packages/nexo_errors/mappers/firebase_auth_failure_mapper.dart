@@ -5,9 +5,29 @@ import '../types/auth_failure.dart';
 import '../types/network_failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Специализированный маппер ошибок Firebase Auth.
+///
+/// Преобразует [FirebaseAuthException] в соответствующие [Failure]:
+/// сетевые ошибки, ошибки аутентификации (неверные учётные данные,
+/// истечение токена, блокировка аккаунта и т.д.).
+///
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+///
+/// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class FirebaseAuthFailureMapper implements FailureSubMapper {
   const FirebaseAuthFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это [FirebaseAuthException].
+  ///
+  /// Анализирует код ошибки Firebase Auth для определения типа:
+  /// - `network-request-failed` → [NetworkFailure.noInternet]
+  /// - `wrong-password`, `invalid-credential` → [AuthFailure.wrongCredentials]
+  /// - `user-not-found` → [AuthFailure.accountNotFound]
+  /// - `email-already-in-use` → [AuthFailure.accountAlreadyExists]
+  /// - `user-disabled` → [AuthFailure.accountBlocked]
+  /// - `too-many-requests` → [AuthFailure.accountTemporarilyLocked]
+  ///
+  /// **Возвращает:** [Failure] или `null`, если [error] не является [FirebaseAuthException].
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is! FirebaseAuthException) return null;

@@ -13,9 +13,25 @@ import 'platform_exceptions.dart';
 /// сохраняет идентификатор запроса; [DioFailureMapper] читает его оттуда.
 const String nexoRequestIdExtraKey = '_nexo_request_id';
 
+/// Специализированный маппер ошибок HTTP-клиента Dio.
+///
+/// Преобразует [DioException] всех типов (timeout, badResponse, connectionError
+/// и т.д.) в соответствующие [Failure]: сетевые, HTTP, аутентификации,
+/// валидации или парсинга. Извлекает `x-request-id` из [RequestOptions.extra]
+/// для связи ошибок с логами сервера.
+///
+/// Используется в цепочке [FailureSubMapper] при работе с Dio-клиентом.
+///
+/// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class DioFailureMapper implements FailureSubMapper {
   const DioFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это [DioException].
+  ///
+  /// Для не-Dio ошибок возвращает `null`. Прокидывает `x-request-id` в
+  /// сетевые и HTTP-ошибки.
+  ///
+  /// **Возвращает:** [Failure] или `null`, если [error] не является [DioException].
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is! DioException) return null;
@@ -41,6 +57,11 @@ final class DioFailureMapper implements FailureSubMapper {
     return failure;
   }
 
+  /// Внутренняя логика маппинга [DioException] в [Failure].
+  ///
+  /// Обрабатывает все типы [DioExceptionType]: timeout, badCertificate, cancel,
+  /// connectionError, badResponse, unknown. Для connectionError и unknown
+  /// дополнительно анализирует вложенное исключение.
   Failure? _tryMapInner(DioException error, [StackTrace? stackTrace]) {
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
@@ -125,6 +146,11 @@ final class DioFailureMapper implements FailureSubMapper {
     }
   }
 
+  /// Маппит [DioException] с типом [DioExceptionType.badResponse] в [Failure].
+  ///
+  /// Извлекает код статуса, тело ответа, сообщение об ошибке и ошибки полей.
+  /// Для 401/403 возвращает [Failure.auth], для 422 — [Failure.validation],
+  /// для остальных — [Failure.http].
   Failure _mapBadResponse(DioException error) {
     final statusCode = error.response?.statusCode;
     final data = error.response?.data;
@@ -163,6 +189,10 @@ final class DioFailureMapper implements FailureSubMapper {
     );
   }
 
+  /// Преобразует текстовое сообщение сокет-ошибки в [Failure].
+  ///
+  /// Анализирует ключевые слова для определения типа сети: timeout, DNS,
+  /// connection refused, host unreachable, connection reset, proxy.
   Failure _mapSocketMessage(String? socketMessage) {
     final message = socketMessage?.toLowerCase() ?? '';
 
@@ -207,6 +237,10 @@ final class DioFailureMapper implements FailureSubMapper {
     return const Failure.network(type: NetworkFailure.noInternet);
   }
 
+  /// Преобразует HTTP-код статуса в соответствующий [HttpFailure].
+  ///
+  /// Поддерживает полный спектр кодов от 400 до 511. Для неизвестных кодов
+  /// возвращает [HttpFailure.unknown].
   HttpFailure _mapStatusCode(int? code) {
     return switch (code) {
       400 => HttpFailure.badRequest,
@@ -253,6 +287,10 @@ final class DioFailureMapper implements FailureSubMapper {
     };
   }
 
+  /// Извлекает [AuthFailure] из тела ответа по полю `code` / `errorCode`.
+  ///
+  /// Анализирует строковый код ошибки из JSON-ответа сервера и маппит его
+  /// на конкретный [AuthFailure] (tokenExpired, wrongCredentials и т.д.).
   AuthFailure? _extractAuthFailure(dynamic data) {
     final code = _extractErrorCode(data)?.toLowerCase();
     if (code == null) return null;
@@ -330,6 +368,10 @@ final class DioFailureMapper implements FailureSubMapper {
     return null;
   }
 
+  /// Извлекает текстовое сообщение об ошибке из тела ответа.
+  ///
+  /// Проверяет поля `message`, `error`, `detail`, `description`, `title`
+  /// в JSON-ответе или использует строковое значение [data] как есть.
   String? _extractMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
       final candidates = [
@@ -354,6 +396,10 @@ final class DioFailureMapper implements FailureSubMapper {
     return null;
   }
 
+  /// Извлекает строковый код ошибки из тела ответа.
+  ///
+  /// Проверяет поля `code`, `errorCode`, `error_code`, `type`, `key`
+  /// в JSON-ответе сервера.
   String? _extractErrorCode(dynamic data) {
     if (data is! Map<String, dynamic>) return null;
 
@@ -374,6 +420,11 @@ final class DioFailureMapper implements FailureSubMapper {
     return null;
   }
 
+  /// Извлекает ошибки валидации по полям из тела ответа.
+  ///
+  /// Проверяет поля `errors`, `fieldErrors`, `field_errors` в JSON-ответе.
+  /// Поддерживает форматы: `Map<String, List<String>>`, `Map<String, Map>` и
+  /// плоские значения.
   Map<String, List<String>> _extractFieldErrors(dynamic data) {
     if (data is! Map<String, dynamic>) return const {};
 
@@ -398,6 +449,7 @@ final class DioFailureMapper implements FailureSubMapper {
     return result;
   }
 
+  /// Проверяет, содержит ли [source] хотя бы одну строку из [patterns].
   bool _containsAny(String source, List<String> patterns) {
     for (final pattern in patterns) {
       if (source.contains(pattern)) return true;

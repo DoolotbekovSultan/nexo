@@ -4,9 +4,29 @@ import '../failure.dart';
 import '../types/notification_failure.dart';
 import 'failure_sub_mapper.dart';
 
+/// Специализированный маппер ошибок Firebase Messaging.
+///
+/// Преобразует [FirebaseException] от Firebase Messaging в соответствующие
+/// [Failure]: ошибки разрешений, регистрации токена, каналов уведомлений
+/// и т.д. Распознаёт ошибки по плагину (`firebase_messaging`) и ключевым
+/// словам в коде/сообщении.
+///
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+///
+/// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class FirebaseMessagingFailureMapper implements FailureSubMapper {
   const FirebaseMessagingFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure], если это [FirebaseException]
+  /// от Firebase Messaging.
+  ///
+  /// Анализирует плагин, код и сообщение ошибки для определения типа:
+  /// - `permission`, `denied` → [NotificationFailure.permissionDenied]
+  /// - `token`, `registration-token` → [NotificationFailure.tokenRegistrationFailed]
+  /// - `channel` → [NotificationFailure.channelNotFound]
+  /// - `payload`, `invalid-argument` → [NotificationFailure.invalidPayload]
+  ///
+  /// **Возвращает:** [Failure] или `null`, если ошибка не относится к Messaging.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is! FirebaseException) return null;

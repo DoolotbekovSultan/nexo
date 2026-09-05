@@ -3,34 +3,115 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 
+/// Функция определения условия повторной попытки.
+///
+/// Принимает [error] и номер попытки [retryAttempt] (начиная с 1).
+/// Возвращает `true`, если запрос следует повторить.
 typedef RetryCondition = bool Function(DioException error, int retryAttempt);
+
+/// Функция расчёта задержки между попытками.
+///
+/// Принимает номер попытки [retryAttempt] (начиная с 1).
+/// Возвращает [Duration] до следующей попытки.
 typedef RetryDelayCalculator = Duration Function(int retryAttempt);
 
+/// Интерсептор для автоматических повторных попыток при ошибках сети.
+///
+/// Поддерживает экспоненциальную задержку с джиттером, настраиваемые
+/// условия повтора и лимит попыток.
+///
+/// ## Алгоритм
+///
+/// 1. При ошибке проверяет условия повтора (тип ошибки, код статуса, метод).
+/// 2. Вычисляет задержку: `baseDelay * backoffMultiplier^(attempt-1) + jitter`.
+/// 3. Ограничивает задержку значением [maxDelay].
+/// 4. Повторяет запрос до достижения [maxRetries] или успешного ответа.
+///
+/// ## Пример использования
+///
+/// ```dart
+/// final dio = Dio();
+/// dio.interceptors.add(
+///   NexoRetryInterceptor(
+///     dio: dio,
+///     maxRetries: 3,
+///     baseDelay: Duration(milliseconds: 500),
+///     backoffMultiplier: 2.0,
+///     onRetry: (attempt, delay, error) {
+///       log('Retry $attempt after ${delay.inMilliseconds}ms');
+///     },
+///   ),
+/// );
+/// ```
+///
+/// См. также: [NexoAuthInterceptor], [NexoLoggingInterceptor].
 class NexoRetryInterceptor extends Interceptor {
+  /// Ключ в [RequestOptions.extra] для пропуска повторных попыток.
   static const String skipRetryKey = '_nexo_skip_retry';
+
+  /// Ключ в [RequestOptions.extra] для хранения количества попыток.
   static const String retryAttemptsKey = '_nexo_retry_attempts';
 
   final Dio dio;
 
+  /// Максимальное количество повторных попыток. По умолчанию: 3.
   final int maxRetries;
 
+  /// Базовая задержка перед первой повторной попыткой.
+  /// По умолчанию: 500мс.
   final Duration baseDelay;
+
+  /// Множитель экспоненциальной задержки. По умолчанию: 2.0.
   final double backoffMultiplier;
+
+  /// Максимальная задержка между попытками. По умолчанию: 10с.
   final Duration maxDelay;
+
+  /// Фактор джиттера (0.0 - 1.0). По умолчанию: 0.2.
   final double jitterFactor;
 
+  /// Типы ошибок Dio, при которых выполняется повтор.
+  /// По умолчанию: connectionTimeout, sendTimeout, receiveTimeout, connectionError.
   final Set<DioExceptionType> retryableErrorTypes;
+
+  /// Коды статуса, при которых выполняется повтор.
+  /// По умолчанию: 408, 429, 500, 502, 503, 504.
   final Set<int> retryableStatusCodes;
+
+  /// HTTP-методы, для которых выполняется повтор.
+  /// По умолчанию: GET, HEAD, DELETE, OPTIONS.
   final Set<String> retryableMethods;
 
+  /// Пользовательское условие повтора (опционально).
   final RetryCondition? customRetryCondition;
+
+  /// Пользовательский калькулятор задержки (опционально).
   final RetryDelayCalculator? customDelayCalculator;
 
+  /// Callback, вызываемый перед каждой повторной попыткой.
   final void Function(int retryAttempt, Duration delay, DioException error)?
   onRetry;
+
+  /// Callback, вызываемый при исчерпании попыток.
   final void Function(int retryAttempts, DioException error)? onRetryFailed;
 
+  /// Создаёт экземпляр [NexoRetryInterceptor].
+  ///
+  /// [dio] — экземпляр Dio для повторных запросов.
+  /// [maxRetries] — максимум попыток. По умолчанию: 3.
+  /// [baseDelay] — базовая задержка. По умолчанию: 500мс.
+  /// [backoffMultiplier] — множитель задержки. По умолчанию: 2.0.
+  /// [maxDelay] — макс. задержка. По умолчанию: 10с.
+  /// [jitterFactor] — фактор джиттера (0.0–1.0). По умолчанию: 0.2.
+  /// [retryableErrorTypes] — типы ошибок для повтора.
+  /// [retryableStatusCodes] — коды статуса для повтора.
+  /// [retryableMethods] — методы для повтора.
+  /// [customRetryCondition] — пользовательское условие повтора (опционально).
+  /// [customDelayCalculator] — кастомный калькулятор задержки (опционально).
+  /// [onRetry] — callback перед каждой попыткой (опционально).
+  /// [onRetryFailed] — callback при исчерпании попыток (опционально).
   const NexoRetryInterceptor({
+    /// Экземпляр Dio для выполнения повторных запросов.
     required this.dio,
     this.maxRetries = 3,
     this.baseDelay = const Duration(milliseconds: 500),

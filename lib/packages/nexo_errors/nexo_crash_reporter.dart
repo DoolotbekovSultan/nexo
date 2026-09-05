@@ -9,6 +9,12 @@ enum NexoBreadcrumbLevel { debug, info, warning, error }
 /// *как* приложение пришло к ошибке: навигация, HTTP-запросы, ошибки
 /// блоков, действия пользователя.
 final class NexoBreadcrumb {
+  /// Создаёт «хлебную крошку».
+  ///
+  /// [message] — текст события.
+  /// [category] — категория (nav, http, bloc, ui и т.д.). По умолчанию: `app`.
+  /// [level] — важность события. По умолчанию: [NexoBreadcrumbLevel.info].
+  /// [data] — дополнительные структурированные данные (опционально).
   NexoBreadcrumb(
     this.message, {
     this.category = 'app',
@@ -59,8 +65,12 @@ abstract class NexoCrashReporter {
   void recordBreadcrumb(NexoBreadcrumb breadcrumb);
 }
 
-/// Заглушка по умолчанию.
+/// Заглушка по умолчанию; ничего не делает.
+///
+/// Используется, когда реальный [NexoCrashReporter] не нужен
+/// (например, в тестах или когда crash reporting отключён).
 final class NoOpNexoCrashReporter implements NexoCrashReporter {
+  /// Создаёт заглушку [NoOpNexoCrashReporter].
   const NoOpNexoCrashReporter();
 
   @override

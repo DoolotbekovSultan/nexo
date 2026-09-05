@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.6-beta.0
+## 0.0.5-beta.0
 
 - **Breaking**: `Result<T>` — собственный sealed-тип вместо `Either<Failure, T>` из dartz:
   - те же короткие имена веток `Right<T>` / `Left<T>`; фабрики-алиасы `Result.success(value)` / `Result.failure(failure)`;
@@ -25,9 +25,6 @@
 - `nexo_errors`: **breadcrumbs** — лента последних событий перед сбоем: новая модель `NexoBreadcrumb` (категория, уровень, данные, timestamp) и метод `recordBreadcrumb` в `NexoCrashReporter`; `CollectingNexoCrashReporter` держит кольцевой буфер (`maxBreadcrumbs`, по умолчанию 50) и отдаёт снимок через `breadcrumbTrail`; `NexoBlocObserver` пишет ошибки блоков в ленту автоматически.
   **Breaking** для своих реализаций `NexoCrashReporter`: добавьте пустой `recordBreadcrumb`.
 - Обновлены зависимости: `flutter_secure_storage` `^9.2.4` → `^11.0.0` (без изменений в API датасорса), dev-зависимость `freezed` `^3.2.5` → `^4.0.0` с регенерацией `failure.freezed.dart`; остальные пакеты — минорные апгрейды.
-
-## 0.0.5-beta.1
-
 - Новый модуль **`nexo_ui`** (ранее WIP за `.gitignore`, теперь часть публичного API):
   - `gap.dart`: расширения **`num.gapH` / `num.gapW`** — спейсеры для `Column`/`Row` с масштабированием через ScreenUtil (требует инициализации `ScreenUtilInit`);
   - `widget_wrappers.dart`: цепочки обёрток виджетов — `pad` / `padSymmetric` / `padOnly`, `center`, `align`, `expanded`, `flexible`, `sized`, `aspectRatio`, `opacity`, `safeArea`, `clipRRect`, `decorated`, `onTap`;

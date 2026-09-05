@@ -23,7 +23,7 @@ export 'package:nexo/packages/nexo_errors/mappers/firebase_auth_failure_mapper.d
 export 'package:nexo/packages/nexo_errors/mappers/firebase_messaging_failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/mappers/hive_failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/mappers/isar_failure_mapper.dart';
-export 'package:nexo/packages/nexo_errors/mappers/platfrom_failure_mapper.dart';
+export 'package:nexo/packages/nexo_errors/mappers/platform_failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/types/auth_failure.dart';
 export 'package:nexo/packages/nexo_errors/types/cache_failure.dart';
 export 'package:nexo/packages/nexo_errors/types/database_failure.dart';

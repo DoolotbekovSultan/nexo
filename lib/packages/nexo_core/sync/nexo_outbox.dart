@@ -10,6 +10,14 @@ import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 /// (например, заголовок `Idempotency-Key`), чтобы повторная доставка
 /// после сбоя сети не создавала дубликатов.
 final class OutboxEntry {
+  /// Создаёт элемент очереди офлайн-мутаций.
+  ///
+  /// [id] — уникальный идентификатор (ключ идемпотентности).
+  /// [path] — путь или логическое имя операции.
+  /// [method] — HTTP-метод. По умолчанию: `POST`.
+  /// [payload] — данные операции. По умолчанию: пустая карта.
+  /// [createdAt] — момент постановки в очередь.
+  /// [attempts] — количество попыток доставки. По умолчанию: 0.
   const OutboxEntry({
     required this.id,
     required this.path,
@@ -19,6 +27,12 @@ final class OutboxEntry {
     this.attempts = 0,
   });
 
+  /// Создаёт элемент очереди с автоматической генерацией [id] и [createdAt].
+  ///
+  /// [path] — путь или логическое имя операции.
+  /// [method] — HTTP-метод. По умолчанию: `POST`.
+  /// [payload] — данные операции (опционально).
+  /// [id] — кастомный идентификатор (опционально, если не задан — генерируется).
   factory OutboxEntry.create({
     required String path,
     String method = 'POST',
@@ -57,6 +71,7 @@ final class OutboxEntry {
   static String _generateId() =>
       '${DateTime.now().microsecondsSinceEpoch}-${_counter++}';
 
+  /// Создаёт копию элемента с возможностью изменения [attempts].
   OutboxEntry copyWith({int? attempts}) => OutboxEntry(
     id: id,
     path: path,
@@ -66,6 +81,7 @@ final class OutboxEntry {
     attempts: attempts ?? this.attempts,
   );
 
+  /// Сериализует элемент в JSON-совместимую карту.
   Map<String, dynamic> toMap() => {
     'id': id,
     'path': path,
@@ -75,6 +91,9 @@ final class OutboxEntry {
     'attempts': attempts,
   };
 
+  /// Десериализует элемент из JSON-карты.
+  ///
+  /// Поддерживает ключи `created_at` и `createdAt` для обратной совместимости.
   factory OutboxEntry.fromMap(Map<String, dynamic> map) => OutboxEntry(
     id: map['id'] as String,
     path: map['path'] as String,
@@ -107,8 +126,10 @@ final class OutboxEntry {
 /// Контракт простой: [save] атомарно заменяет весь список, [load]
 /// возвращает его же после перезапуска приложения.
 abstract interface class OutboxStore {
+  /// Загружает все элементы очереди из хранилища.
   Future<List<OutboxEntry>> load();
 
+  /// Сохраняет все элементы очереди, заменяя предыдущее содержимое.
   Future<void> save(List<OutboxEntry> entries);
 }
 
@@ -117,9 +138,11 @@ abstract interface class OutboxStore {
 final class InMemoryOutboxStore implements OutboxStore {
   List<OutboxEntry> _entries = const [];
 
+  /// Возвращает копию всех элементов очереди из памяти.
   @override
   Future<List<OutboxEntry>> load() async => List.of(_entries);
 
+  /// Сохраняет элементы в память (заменяет предыдущее содержимое).
   @override
   Future<void> save(List<OutboxEntry> entries) async {
     _entries = List.of(entries);
@@ -143,6 +166,7 @@ final class OutboxFlushResult {
   /// Ошибка, остановившая доставку; `null` — очередь пуста.
   final Failure? failure;
 
+  /// `true`, если все операции доставлены успешно и очередь пуста.
   bool get isComplete => remaining == 0 && failure == null;
 
   @override
@@ -165,7 +189,7 @@ final class OutboxFlushResult {
 ///     // ключ идемпотентности, чтобы ретраи не создавали дубликаты:
 ///     // headers не задаются здесь — добавьте их внутри send при необходимости
 ///   ),
-///   logger: logger,,
+///   logger: logger,
 /// );
 ///
 /// // Пользовательское действие — «успех» для UI сразу:
@@ -181,6 +205,11 @@ final class OutboxFlushResult {
 /// выполняются), счётчик [OutboxEntry.attempts] растёт, ошибка возвращается
 /// маппнутой в [Failure].
 class NexoOutbox {
+  /// Создаёт очередь офлайн-мутаций.
+  ///
+  /// [store] — хранилище очереди (персистентное или in-memory).
+  /// [send] — функция доставки одной операции; броски маппятся в [Failure].
+  /// [logger] — логгер (опционально).
   NexoOutbox({required this.store, required this.send, this.logger});
 
   /// Хранилище очереди.

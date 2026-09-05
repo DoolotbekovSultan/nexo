@@ -24,6 +24,7 @@ import 'package:nexo/packages/nexo_errors/result.dart';
 /// context.read<UsersCubit>().load();
 /// ```
 abstract class NexoAsyncCubit<T> extends NexoCubit<NexoAsyncState<T>> {
+  /// Создаёт экземпляр [NexoAsyncCubit] с начальным состоянием [NexoAsyncIdle].
   NexoAsyncCubit() : super(const NexoAsyncIdle());
 
   /// Колбэк ошибки (например, для snackbar вне дерева билда).

@@ -11,14 +11,25 @@ import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
 /// прокидывает его в сетевые и HTTP-ошибки (`Failure`) — используйте это,
 /// чтобы связывать ошибки UI с логами сервера.
 class NexoRequestIdInterceptor extends Interceptor {
+  /// Имя заголовка для передачи идентификатора запроса.
   static const String headerName = 'x-request-id';
 
   /// Ключ `RequestOptions.extra` с идентификатором запроса.
   static const String extraRequestIdKey = nexoRequestIdExtraKey;
 
+  /// Логгер для записи идентификаторов запросов (опционально).
   final NexoLogger? logger;
+
+  /// Функция генерации идентификатора (опционально).
+  ///
+  /// Если не задана, используется сгенерированный UUID на основе
+  /// микросекунд и случайного числа.
   final String Function()? generateId;
 
+  /// Создаёт экземпляр [NexoRequestIdInterceptor].
+  ///
+  /// [logger] — логгер для записи событий (опционально).
+  /// [generateId] — кастомная функция генерации ID (опционально).
   NexoRequestIdInterceptor({this.logger, this.generateId});
 
   String _nextId() {

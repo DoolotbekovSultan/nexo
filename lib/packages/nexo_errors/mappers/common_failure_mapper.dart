@@ -9,9 +9,28 @@ import '../types/validation_failure.dart';
 import 'failure_sub_mapper.dart';
 import 'platform_exceptions.dart';
 
+/// Универсальный маппер ошибок, обрабатывающий типовые Dart-исключения.
+///
+/// Преобразует [SocketException], [TimeoutException], [FormatException],
+/// [UnsupportedError], [ArgumentError], [StateError], [TypeError] и другие
+/// стандартные ошибки в соответствующие [Failure]. Также обрабатывает ошибки
+/// `dart:io` через условные импорты [PlatformExceptions] для совместимости с web.
+///
+/// Используется как «последний рубеж» в цепочке мапперов — ловит всё, что не
+/// обработано специализированными мапперами (Dio, Firebase, Drift и т.д.).
+///
+/// См. также: [FailureSubMapper], [DioFailureMapper], [PlatformFailureMapper].
 final class CommonFailureMapper implements FailureSubMapper {
   const CommonFailureMapper();
 
+  /// Пытается преобразовать [error] в [Failure] на основе его типа и сообщения.
+  ///
+  /// Если [error] уже является [Failure], возвращает его без изменений.
+  /// Для `dart:io` ошибок использует [PlatformExceptions] для кроссплатформенной
+  /// проверки типов.
+  ///
+  /// **Возвращает:** [Failure] соответствующего типа или `null`, если ошибка
+  /// не распознана.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
     if (error is Failure) return error;
@@ -65,6 +84,10 @@ final class CommonFailureMapper implements FailureSubMapper {
     };
   }
 
+  /// Преобразует текстовое сообщение сокет-ошибки в соответствующий [Failure].
+  ///
+  /// Анализирует ключевые слова в [socketMessage] (timeout, DNS, connection
+  /// refused и т.д.) для определения конкретного типа сетевой ошибки.
   Failure _mapSocketMessage(String? socketMessage) {
     final message = socketMessage?.toLowerCase() ?? '';
 
@@ -117,6 +140,9 @@ final class CommonFailureMapper implements FailureSubMapper {
     return const Failure.network(type: NetworkFailure.noInternet);
   }
 
+  /// Преобразует [FormatException] в [Failure] на основе типа ошибки парсинга.
+  ///
+  /// Определяет категорию ошибки (JSON, дата, тип) по сообщению исключения.
   Failure _mapFormatException(FormatException error) {
     final message = error.message.toLowerCase();
 
@@ -147,14 +173,15 @@ final class CommonFailureMapper implements FailureSubMapper {
     );
   }
 
+  /// Преобразует текстовое сообщение HTTP-ошибки в [Failure] по коду статуса.
+  ///
+  /// Анализирует ключевые слова в [message] (401, 500, timeout и т.д.)
+  /// для определения конкретного типа HTTP-ошибки.
   Failure _mapHttpMessage(String message) {
     final raw = message.toLowerCase();
 
     if (_containsAny(raw, const ['401', 'unauthorized'])) {
-      return Failure.http(
-        type: HttpFailure.unauthorized,
-        message: message,
-      );
+      return Failure.http(type: HttpFailure.unauthorized, message: message);
     }
 
     if (_containsAny(raw, const ['403', 'forbidden'])) {
@@ -166,17 +193,11 @@ final class CommonFailureMapper implements FailureSubMapper {
     }
 
     if (_containsAny(raw, const ['408', 'timeout'])) {
-      return Failure.http(
-        type: HttpFailure.requestTimeout,
-        message: message,
-      );
+      return Failure.http(type: HttpFailure.requestTimeout, message: message);
     }
 
     if (_containsAny(raw, const ['429', 'too many requests'])) {
-      return Failure.http(
-        type: HttpFailure.tooManyRequests,
-        message: message,
-      );
+      return Failure.http(type: HttpFailure.tooManyRequests, message: message);
     }
 
     if (_containsAny(raw, const ['500', 'internal server error'])) {
@@ -198,15 +219,13 @@ final class CommonFailureMapper implements FailureSubMapper {
     }
 
     if (_containsAny(raw, const ['504', 'gateway timeout'])) {
-      return Failure.http(
-        type: HttpFailure.gatewayTimeout,
-        message: message,
-      );
+      return Failure.http(type: HttpFailure.gatewayTimeout, message: message);
     }
 
     return Failure.http(type: HttpFailure.unknown, message: message);
   }
 
+  /// Проверяет, содержит ли [source] хотя бы одну строку из [patterns].
   bool _containsAny(String source, List<String> patterns) {
     for (final pattern in patterns) {
       if (source.contains(pattern)) return true;
