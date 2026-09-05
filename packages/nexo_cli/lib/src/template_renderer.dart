@@ -84,6 +84,7 @@ abstract final class TemplateRenderer {
     }
     if (norm.endsWith('_remote_datasource.dart')) {
       if (!options.injectable) return _tplRemoteDatasourceNoInjectable;
+      if (options.mock) return _tplRemoteDatasourceWithMock;
       return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
     }
     if (norm.endsWith('_local_datasource.dart')) {
@@ -544,8 +545,32 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add @LazySingleton(as: IRemote{{Feature}}DataSource) if using DI.
-// If you have multiple implementations (mock + prod), add env: parameter.
+@LazySingleton(as: IRemote{{Feature}}DataSource)
+class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
+    implements IRemote{{Feature}}DataSource {
+  {{Feature}}RemoteDataSource(super.client, {required super.logger});
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final response = await get('{{featureSnake}}/');
+    final data = response.data;
+    if (data is! List) return const [];
+    return List.from(data)
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+}
+''';
+
+const _tplRemoteDatasourceWithMock = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_remote_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): add env: [AppEnvironment.prod] if using environment-based DI.
 @LazySingleton(as: IRemote{{Feature}}DataSource)
 class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
     implements IRemote{{Feature}}DataSource {
