@@ -88,6 +88,11 @@ abstract final class TemplateRenderer {
       return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
     }
     if (norm.endsWith('_local_datasource.dart')) {
+      if (options.mock) {
+        return options.isList
+            ? _tplLocalDatasourceWithMock
+            : _tplLocalDatasourceSingleWithMock;
+      }
       return options.isList ? _tplLocalDatasource : _tplLocalDatasourceSingle;
     }
 
@@ -646,9 +651,24 @@ import 'package:injectable/injectable.dart';
 import 'i_local_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add @LazySingleton(as: ILocal{{Feature}}DataSource) if using DI.
-// If you have multiple implementations (mock + prod), add env: parameter.
-// Consider extending BaseSharedPreferencesDataSource, BaseHiveDataSource, etc.
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    // TODO(nexo): implement local storage read.
+    return const [];
+  }
+}
+''';
+
+const _tplLocalDatasourceWithMock = r'''
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): replace @Named with env: parameter if using environment-based DI.
+@Named('local')
 @LazySingleton(as: ILocal{{Feature}}DataSource)
 class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
   @override
@@ -665,9 +685,24 @@ import 'package:injectable/injectable.dart';
 import 'i_local_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add @LazySingleton(as: ILocal{{Feature}}DataSource) if using DI.
-// If you have multiple implementations (mock + prod), add env: parameter.
-// Consider extending BaseSharedPreferencesDataSource, BaseHiveDataSource, etc.
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    // TODO(nexo): implement local storage read.
+    throw UnimplementedError();
+  }
+}
+''';
+
+const _tplLocalDatasourceSingleWithMock = r'''
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): replace @Named with env: parameter if using environment-based DI.
+@Named('local')
 @LazySingleton(as: ILocal{{Feature}}DataSource)
 class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
   @override
@@ -748,7 +783,8 @@ import 'package:injectable/injectable.dart';
 import 'i_local_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-// TODO(nexo): add env: [AppEnvironment.mock] if using environment-based DI.
+// TODO(nexo): replace @Named with env: parameter if using environment-based DI.
+@Named('mock')
 @LazySingleton(as: ILocal{{Feature}}DataSource)
 class Mock{{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
   @override
