@@ -201,8 +201,24 @@ abstract final class TemplateRenderer {
     final retType = options.returnType(names);
     final modelRetType = options.modelReturnType(names);
 
+    // Named parameter annotation for DI disambiguation.
+    final namedParam = options.mock ? "@Named('prod') " : '';
+
+    // Mapper import and call (only when --mapper is enabled).
+    final mapperImport = options.mapper
+        ? "import '../mappers/{{featureSnake}}_mapper.dart';"
+        : '';
+    final mapperCall = options.mapper ? '.toDomain()' : '';
+    final noMapperBody = options.mapper
+        ? '    return models.toDomain();'
+        : "    // TODO(nexo): implement mapping from {{Feature}}Model to {{Feature}}Entity.\n    return const [];";
+
     // First: substitute generated content blocks.
     var result = template
+        .replaceAll('{{namedParam}}', namedParam)
+        .replaceAll('{{mapperImport}}', mapperImport)
+        .replaceAll('{{mapperCall}}', mapperCall)
+        .replaceAll('{{noMapperBody}}', noMapperBody)
         .replaceAll('{{fieldsDecl}}', fieldsDecl)
         .replaceAll('{{fieldsCtorParams}}', fieldsCtorParams)
         .replaceAll('{{fieldsCtor}}', fieldsCtor)
@@ -234,7 +250,9 @@ abstract final class TemplateRenderer {
 
   static String _generateFieldsCtorParams(Map<String, String>? fields) {
     if (fields == null || fields.isEmpty) return '    required String id,';
-    return fields.entries.map((e) => '    required ${e.value} ${e.key},').join('\n');
+    return fields.entries
+        .map((e) => '    required ${e.value} ${e.key},')
+        .join('\n');
   }
 
   static String _generateFieldsCtor(Map<String, String>? fields) {
@@ -295,7 +313,9 @@ abstract final class TemplateRenderer {
 
   static String _generateEntityCtorParams(Map<String, String>? fields) {
     if (fields == null || fields.isEmpty) return '    required String id,';
-    return fields.entries.map((e) => '    required ${e.value} ${e.key},').join('\n');
+    return fields.entries
+        .map((e) => '    required ${e.value} ${e.key},')
+        .join('\n');
   }
 
   static String _generateMapperFields(Map<String, String>? fields) {
@@ -320,7 +340,9 @@ abstract final class TemplateRenderer {
 
   static String _generateRequestCtorParams(Map<String, String>? fields) {
     if (fields == null || fields.isEmpty) return '    required String id,';
-    return fields.entries.map((e) => '    required ${e.value} ${e.key},').join('\n');
+    return fields.entries
+        .map((e) => '    required ${e.value} ${e.key},')
+        .join('\n');
   }
 
   static String _snakeToLowerCamel(String snake) {
@@ -863,17 +885,18 @@ import 'package:injectable/injectable.dart';
 import '../../domain/entities/{{featureSnake}}_entity.dart';
 import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
 import '../datasources/i_remote_{{featureSnake}}_data_source.dart';
+{{mapperImport}}
 
 @LazySingleton(as: I{{Feature}}Repository)
 class {{Feature}}Repository implements I{{Feature}}Repository {
-  {{Feature}}Repository({required this._remoteDatasource});
+  {{Feature}}Repository({{{namedParam}}required this._remoteDatasource});
 
   final IRemote{{Feature}}DataSource _remoteDatasource;
 
   @override
   Future<{{retType}}> getAll() async {
     final models = await _remoteDatasource.getAll();
-    return models.toDomain();
+{{noMapperBody}}
   }
 }
 ''';
@@ -882,6 +905,7 @@ const _tplRepositoryImplNoInjectable = r'''
 import '../../domain/entities/{{featureSnake}}_entity.dart';
 import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
 import '../datasources/{{featureSnake}}_remote_datasource.dart';
+{{mapperImport}}
 
 class {{Feature}}Repository implements I{{Feature}}Repository {
   {{Feature}}Repository({required this._remoteDatasource});
@@ -891,7 +915,7 @@ class {{Feature}}Repository implements I{{Feature}}Repository {
   @override
   Future<{{retType}}> getAll() async {
     final models = await _remoteDatasource.getAll();
-    return models.toDomain();
+{{noMapperBody}}
   }
 }
 ''';

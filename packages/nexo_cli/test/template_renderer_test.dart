@@ -198,6 +198,26 @@ void main() {
       expect(out, contains('class AuthRepository'));
       expect(out, contains('implements IAuthRepository'));
     });
+
+    test('repository impl has @Named when mock is enabled', () {
+      final names = NameUtils.fromFeatureInput('auth');
+      final out = TemplateRenderer.render(
+        'data/repositories/auth_repository.dart',
+        names,
+        defaultOptions.copyWith(mock: true),
+      );
+      expect(out, contains("@Named('prod')"));
+    });
+
+    test('repository impl has no @Named when mock is disabled', () {
+      final names = NameUtils.fromFeatureInput('auth');
+      final out = TemplateRenderer.render(
+        'data/repositories/auth_repository.dart',
+        names,
+        defaultOptions.copyWith(mock: false),
+      );
+      expect(out, isNot(contains('@Named')));
+    });
   });
 
   group('usecase template', () {

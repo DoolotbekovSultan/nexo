@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Fixed: repository template now adds `@Named('prod')` on constructor parameter when `--mock` is enabled (resolves injectable DI ambiguity).
+- Fixed: repository template now imports mapper and calls `.toDomain()` only when `--mapper` is enabled.
+- Fixed: `--no-mapper` mode generates `return const []` with a TODO comment instead of broken `.toDomain()` call.
+- 90 tests passing.
+
 ## 0.2.0
 
 - **Breaking:** cubit is now the default presentation style (was bloc).
