@@ -155,8 +155,10 @@ void main() {
         isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
-      expect(paths, contains('presentation/cubit/auth_cubit.dart'));
-      expect(paths.where((p) => p.contains('auth_state.dart')), isEmpty);
+      expect(paths, containsAll([
+        'presentation/cubit/auth_cubit.dart',
+        'presentation/cubit/auth_state.dart',
+      ]));
     });
 
     test('local + mock + create/update CRUD', () {

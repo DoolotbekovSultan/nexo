@@ -69,13 +69,16 @@ abstract final class TemplateRenderer {
     // ── Datasources ──
     if (norm.contains('datasources/mock_') &&
         norm.endsWith('_remote_data_source.dart')) {
-      return _tplMockRemoteDatasource;
+      return options.isList
+          ? _tplMockRemoteDatasource
+          : _tplMockRemoteDatasourceSingle;
     }
     if (norm.contains('datasources/mock_') &&
         norm.endsWith('_local_data_source.dart')) {
       return _tplMockLocalDatasource;
     }
     if (norm.endsWith('_remote_datasource.dart')) {
+      if (!options.injectable) return _tplRemoteDatasourceNoInjectable;
       return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
     }
     if (norm.endsWith('_local_datasource.dart')) {
@@ -96,6 +99,7 @@ abstract final class TemplateRenderer {
     // ── Repository impl (data) ──
     if (norm.contains('data/repositories/') &&
         norm.endsWith('_repository.dart')) {
+      if (!options.injectable) return _tplRepositoryImplNoInjectable;
       return _tplRepositoryImpl;
     }
 
@@ -142,6 +146,7 @@ abstract final class TemplateRenderer {
     // ── Cubit ──
     if (norm.contains('presentation/cubit/') && norm.endsWith('_cubit.dart')) {
       if (options.hasListCubit) return _tplListCubit;
+      if (!options.freezed) return _tplCubitNoFreezed;
       return _tplCubit;
     }
 
@@ -264,6 +269,7 @@ abstract final class TemplateRenderer {
 
   static String _generateMapperFields(Map<String, String>? fields) {
     if (fields == null || fields.isEmpty) {
+      // Default: model has 'id' field
       return '  {{Feature}}Entity toDomain() => {{Feature}}Entity(id: id);';
     }
     final assigns = fields.keys.map((k) => '$k: $k').join(', ');
@@ -507,7 +513,6 @@ abstract interface class ILocal{{Feature}}DataSource {
 
 const _tplRemoteDatasource = r'''
 import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_logger.dart';
 import 'package:injectable/injectable.dart';
 
 import 'i_remote_{{featureSnake}}_data_source.dart';
@@ -533,9 +538,28 @@ class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
 }
 ''';
 
+const _tplRemoteDatasourceNoInjectable = r'''
+import 'package:nexo/nexo_core.dart';
+
+import '../models/{{featureSnake}}_model.dart';
+
+class {{Feature}}RemoteDataSource extends BaseRemoteDataSource {
+  {{Feature}}RemoteDataSource(super.client, {required super.logger});
+
+  Future<{{modelRetType}}> getAll() async {
+    final response = await get('{{featureSnake}}/');
+    final data = response.data;
+    if (data is! List) return const [];
+    return List.from(data)
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+}
+''';
+
 const _tplRemoteDatasourceSingle = r'''
 import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_logger.dart';
 import 'package:injectable/injectable.dart';
 
 import 'i_remote_{{featureSnake}}_data_source.dart';
@@ -565,8 +589,6 @@ class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
 // ──────────────────────────────────────────────────────────────────────────────
 
 const _tplLocalDatasource = r'''
-import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_logger.dart';
 import 'package:injectable/injectable.dart';
 
 import 'i_local_{{featureSnake}}_data_source.dart';
@@ -574,11 +596,9 @@ import '../models/{{featureSnake}}_model.dart';
 
 // TODO(nexo): add @LazySingleton(as: ILocal{{Feature}}DataSource) if using DI.
 // If you have multiple implementations (mock + prod), add env: parameter.
+// Consider extending BaseSharedPreferencesDataSource, BaseHiveDataSource, etc.
 @LazySingleton(as: ILocal{{Feature}}DataSource)
-class {{Feature}}LocalDataSource extends BaseLocalDataSource
-    implements ILocal{{Feature}}DataSource {
-  {{Feature}}LocalDataSource({required super.logger});
-
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
   @override
   Future<{{modelRetType}}> getAll() async {
     // TODO(nexo): implement local storage read.
@@ -588,8 +608,6 @@ class {{Feature}}LocalDataSource extends BaseLocalDataSource
 ''';
 
 const _tplLocalDatasourceSingle = r'''
-import 'package:nexo/nexo_core.dart';
-import 'package:nexo/nexo_logger.dart';
 import 'package:injectable/injectable.dart';
 
 import 'i_local_{{featureSnake}}_data_source.dart';
@@ -597,11 +615,9 @@ import '../models/{{featureSnake}}_model.dart';
 
 // TODO(nexo): add @LazySingleton(as: ILocal{{Feature}}DataSource) if using DI.
 // If you have multiple implementations (mock + prod), add env: parameter.
+// Consider extending BaseSharedPreferencesDataSource, BaseHiveDataSource, etc.
 @LazySingleton(as: ILocal{{Feature}}DataSource)
-class {{Feature}}LocalDataSource extends BaseLocalDataSource
-    implements ILocal{{Feature}}DataSource {
-  {{Feature}}LocalDataSource({required super.logger});
-
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
   @override
   Future<{{modelRetType}}> getAll() async {
     // TODO(nexo): implement local storage read.
@@ -626,6 +642,23 @@ class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override
   Future<{{modelRetType}}> getAll() async {
     return const [];
+  }
+}
+''';
+
+const _tplMockRemoteDatasourceSingle = r'''
+import 'package:injectable/injectable.dart';
+
+import 'i_remote_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): add env: [AppEnvironment.mock] if using environment-based DI.
+@LazySingleton(as: IRemote{{Feature}}DataSource)
+class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    // TODO(nexo): return a mock {{Feature}}Model instance.
+    throw UnimplementedError();
   }
 }
 ''';
@@ -656,7 +689,7 @@ class Mock{{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
 
 const _tplMapper = r'''
 import '../models/{{featureSnake}}_model.dart';
-import '../entities/{{featureSnake}}_entity.dart';
+import '../../domain/entities/{{featureSnake}}_entity.dart';
 
 extension {{Feature}}Mapper on {{Feature}}Model {
 {{mapperFields}}
@@ -695,6 +728,24 @@ class {{Feature}}Repository implements I{{Feature}}Repository {
   {{Feature}}Repository({required this._remoteDatasource});
 
   final IRemote{{Feature}}DataSource _remoteDatasource;
+
+  @override
+  Future<{{retType}}> getAll() async {
+    final models = await _remoteDatasource.getAll();
+    return models.toDomain();
+  }
+}
+''';
+
+const _tplRepositoryImplNoInjectable = r'''
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
+import '../datasources/{{featureSnake}}_remote_datasource.dart';
+
+class {{Feature}}Repository implements I{{Feature}}Repository {
+  {{Feature}}Repository({required this._remoteDatasource});
+
+  final {{Feature}}RemoteDataSource _remoteDatasource;
 
   @override
   Future<{{retType}}> getAll() async {
@@ -1011,6 +1062,34 @@ class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
 }
 ''';
 
+const _tplCubitNoFreezed = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
+import '{{featureSnake}}_state.dart';
+
+@injectable
+class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
+  {{Feature}}Cubit({
+    required Get{{Feature}}UseCase get{{Feature}}UseCase,
+  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
+        super(const NexoAsyncLoading());
+
+  final Get{{Feature}}UseCase _get{{Feature}}UseCase;
+
+  Future<void> load() async {
+    await executeEither<{{retType}}>(
+      action: () => _get{{Feature}}UseCase(const NoParams()),
+      onLoading: () => const NexoAsyncLoading(),
+      onSuccess: (data) => NexoAsyncSuccess(data),
+      onError: (failure) => NexoAsyncFailure(failure),
+    );
+  }
+}
+''';
+
 // ──────────────────────────────────────────────────────────────────────────────
 // ListCubit
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1021,18 +1100,24 @@ import 'package:injectable/injectable.dart';
 
 import '../../domain/entities/{{featureSnake}}_entity.dart';
 import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
+import '{{featureSnake}}_state.dart';
 
 @injectable
-class {{Feature}}Cubit extends NexoListCubit<{{Feature}}Entity> {
+class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
   {{Feature}}Cubit({
     required Get{{Feature}}UseCase get{{Feature}}UseCase,
-  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase;
+  })  : _get{{Feature}}UseCase = get{{Feature}}UseCase,
+        super(const {{Feature}}State.loading());
 
   final Get{{Feature}}UseCase _get{{Feature}}UseCase;
 
-  @override
-  Future<List<{{Feature}}Entity>> fetch() async {
-    return await _get{{Feature}}UseCase(const NoParams());
+  Future<void> load() async {
+    await executeEither<List<{{Feature}}Entity>>(
+      action: () => _get{{Feature}}UseCase(const NoParams()),
+      onLoading: () => const {{Feature}}State.loading(),
+      onSuccess: (data) => {{Feature}}State.success(data: data),
+      onError: (failure) => {{Feature}}State.error(failure: failure),
+    );
   }
 }
 ''';

@@ -261,7 +261,8 @@ void main() {
       );
       expect(out, contains('@injectable'));
       expect(out, contains('class AuthCubit'));
-      expect(out, contains('extends NexoListCubit'));
+      expect(out, contains('extends NexoCubit'));
+      expect(out, contains('load()'));
     });
   });
 

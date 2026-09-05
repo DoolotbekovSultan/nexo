@@ -313,17 +313,23 @@ abstract final class FeaturePlan {
     }
 
     // ── presentation/ ──
-    if (options.hasBloc) {
-      lines
-        ..add('presentation/bloc/${s}_bloc.dart')
-        ..add('presentation/bloc/${s}_event.dart')
-        ..add('presentation/bloc/${s}_state.dart');
-    } else if (options.hasCubit) {
-      lines
-        ..add('presentation/cubit/${s}_cubit.dart')
-        ..add('presentation/cubit/${s}_state.dart');
-    } else if (options.hasListCubit) {
-      lines.add('presentation/cubit/${s}_cubit.dart');
+    // Only generate cubit/bloc if there's a get operation or no CRUD operations
+    final hasPresentation = options.hasGet || options.crudOperations.isEmpty;
+    if (hasPresentation) {
+      if (options.hasBloc) {
+        lines
+          ..add('presentation/bloc/${s}_bloc.dart')
+          ..add('presentation/bloc/${s}_event.dart')
+          ..add('presentation/bloc/${s}_state.dart');
+      } else if (options.hasCubit) {
+        lines
+          ..add('presentation/cubit/${s}_cubit.dart')
+          ..add('presentation/cubit/${s}_state.dart');
+      } else if (options.hasListCubit) {
+        lines
+          ..add('presentation/cubit/${s}_cubit.dart')
+          ..add('presentation/cubit/${s}_state.dart');
+      }
     }
 
     lines.add('presentation/${s}_screen.dart');
