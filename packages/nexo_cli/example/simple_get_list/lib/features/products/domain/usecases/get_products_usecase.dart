@@ -6,10 +6,8 @@ import '../repositories/i_products_repository.dart';
 
 @injectable
 class GetProductsUseCase extends NexoUseCase<List<ProductsEntity>, NoParams> {
-  GetProductsUseCase(
-    super._logger, {
-    required IProductsRepository repository,
-  }) : _repository = repository;
+  GetProductsUseCase(super._logger, {required IProductsRepository repository})
+    : _repository = repository;
 
   final IProductsRepository _repository;
 

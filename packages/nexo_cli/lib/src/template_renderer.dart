@@ -75,8 +75,12 @@ abstract final class TemplateRenderer {
         norm.endsWith('_local_data_source.dart')) {
       return _tplMockLocalDatasource;
     }
-    if (norm.endsWith('_remote_datasource.dart')) return _tplRemoteDatasource;
-    if (norm.endsWith('_local_datasource.dart')) return _tplLocalDatasource;
+    if (norm.endsWith('_remote_datasource.dart')) {
+      return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
+    }
+    if (norm.endsWith('_local_datasource.dart')) {
+      return options.isList ? _tplLocalDatasource : _tplLocalDatasourceSingle;
+    }
 
     // ── Mappers ──
     if (norm.contains('mappers/') && norm.endsWith('_mapper.dart')) {
@@ -103,7 +107,18 @@ abstract final class TemplateRenderer {
 
     // ── CRUD UseCases ──
     if (norm.contains('domain/usecases/') && norm.endsWith('_usecases.dart')) {
-      return _tplCrudUseCases;
+      // Determine which CRUD operations are selected.
+      final hasCreate = options.hasCreate;
+      final hasUpdate = options.hasUpdate;
+      final hasDelete = options.hasDelete;
+
+      // If only one operation, use the specific template.
+      if (hasCreate && !hasUpdate && !hasDelete) return _tplCrudUseCasesCreate;
+      if (!hasCreate && hasUpdate && !hasDelete) return _tplCrudUseCasesUpdate;
+      if (!hasCreate && !hasUpdate && hasDelete) return _tplCrudUseCasesDelete;
+
+      // If multiple operations, use combined template.
+      return _tplCrudUseCasesCombined;
     }
 
     // ── Parameters ──
@@ -159,8 +174,9 @@ abstract final class TemplateRenderer {
     final mapperFields = _generateMapperFields(options.jsonFields);
     final requestFields = _generateRequestFields(options.jsonFields);
 
-    // Return type.
+    // Return types.
     final retType = options.returnType(names);
+    final modelRetType = options.modelReturnType(names);
 
     // First: substitute generated content blocks.
     var result = template
@@ -171,6 +187,7 @@ abstract final class TemplateRenderer {
         .replaceAll('{{entityFields}}', entityFields)
         .replaceAll('{{mapperFields}}', mapperFields)
         .replaceAll('{{requestFields}}', requestFields)
+        .replaceAll('{{modelRetType}}', modelRetType)
         .replaceAll('{{retType}}', retType);
 
     // Second: substitute name placeholders (after content blocks are inserted).
@@ -472,7 +489,7 @@ const _tplRemoteDatasourceInterface = r'''
 import '../models/{{featureSnake}}_model.dart';
 
 abstract interface class IRemote{{Feature}}DataSource {
-  Future<{{retType}}> getAll();
+  Future<{{modelRetType}}> getAll();
 }
 ''';
 
@@ -480,7 +497,7 @@ const _tplLocalDatasourceInterface = r'''
 import '../models/{{featureSnake}}_model.dart';
 
 abstract interface class ILocal{{Feature}}DataSource {
-  Future<{{retType}}> getAll();
+  Future<{{modelRetType}}> getAll();
 }
 ''';
 
@@ -496,13 +513,15 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-@LazySingleton(as: IRemote{{Feature}}DataSource, env: [AppEnvironment.prod])
+// TODO(nexo): add @LazySingleton(as: IRemote{{Feature}}DataSource) if using DI.
+// If you have multiple implementations (mock + prod), add env: parameter.
+@LazySingleton(as: IRemote{{Feature}}DataSource)
 class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
     implements IRemote{{Feature}}DataSource {
   {{Feature}}RemoteDataSource(super.client, {required super.logger});
 
   @override
-  Future<{{retType}}> getAll() async {
+  Future<{{modelRetType}}> getAll() async {
     final response = await get('{{featureSnake}}/');
     final data = response.data;
     if (data is! List) return const [];
@@ -510,6 +529,33 @@ class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
         .whereType<Map<String, dynamic>>()
         .map({{Feature}}Model.fromJson)
         .toList();
+  }
+}
+''';
+
+const _tplRemoteDatasourceSingle = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:nexo/nexo_logger.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_remote_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): add @LazySingleton(as: IRemote{{Feature}}DataSource) if using DI.
+// If you have multiple implementations (mock + prod), add env: parameter.
+@LazySingleton(as: IRemote{{Feature}}DataSource)
+class {{Feature}}RemoteDataSource extends BaseRemoteDataSource
+    implements IRemote{{Feature}}DataSource {
+  {{Feature}}RemoteDataSource(super.client, {required super.logger});
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final response = await get('{{featureSnake}}/');
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw StateError('Expected a JSON object, got ${data.runtimeType}');
+    }
+    return {{Feature}}Model.fromJson(data);
   }
 }
 ''';
@@ -526,15 +572,40 @@ import 'package:injectable/injectable.dart';
 import 'i_local_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-@LazySingleton(as: ILocal{{Feature}}DataSource, env: [AppEnvironment.prod])
+// TODO(nexo): add @LazySingleton(as: ILocal{{Feature}}DataSource) if using DI.
+// If you have multiple implementations (mock + prod), add env: parameter.
+@LazySingleton(as: ILocal{{Feature}}DataSource)
 class {{Feature}}LocalDataSource extends BaseLocalDataSource
     implements ILocal{{Feature}}DataSource {
   {{Feature}}LocalDataSource({required super.logger});
 
   @override
-  Future<{{retType}}> getAll() async {
+  Future<{{modelRetType}}> getAll() async {
     // TODO(nexo): implement local storage read.
     return const [];
+  }
+}
+''';
+
+const _tplLocalDatasourceSingle = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:nexo/nexo_logger.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+// TODO(nexo): add @LazySingleton(as: ILocal{{Feature}}DataSource) if using DI.
+// If you have multiple implementations (mock + prod), add env: parameter.
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource extends BaseLocalDataSource
+    implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required super.logger});
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    // TODO(nexo): implement local storage read.
+    throw UnimplementedError();
   }
 }
 ''';
@@ -549,10 +620,11 @@ import 'package:injectable/injectable.dart';
 import 'i_remote_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-@LazySingleton(as: IRemote{{Feature}}DataSource, env: [AppEnvironment.mock])
+// TODO(nexo): add env: [AppEnvironment.mock] if using environment-based DI.
+@LazySingleton(as: IRemote{{Feature}}DataSource)
 class Mock{{Feature}}RemoteDataSource implements IRemote{{Feature}}DataSource {
   @override
-  Future<{{retType}}> getAll() async {
+  Future<{{modelRetType}}> getAll() async {
     return const [];
   }
 }
@@ -568,10 +640,11 @@ import 'package:injectable/injectable.dart';
 import 'i_local_{{featureSnake}}_data_source.dart';
 import '../models/{{featureSnake}}_model.dart';
 
-@LazySingleton(as: ILocal{{Feature}}DataSource, env: [AppEnvironment.mock])
+// TODO(nexo): add env: [AppEnvironment.mock] if using environment-based DI.
+@LazySingleton(as: ILocal{{Feature}}DataSource)
 class Mock{{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
   @override
-  Future<{{retType}}> getAll() async {
+  Future<{{modelRetType}}> getAll() async {
     return const [];
   }
 }
@@ -662,11 +735,88 @@ class Get{{Feature}}UseCase extends NexoUseCase<{{retType}}, NoParams> {
 // CRUD UseCases
 // ──────────────────────────────────────────────────────────────────────────────
 
-const _tplCrudUseCases = r'''
+const _tplCrudUseCasesCreate = r'''
 import 'package:nexo/nexo_core.dart';
 import 'package:injectable/injectable.dart';
 
 import '../entities/{{featureSnake}}_entity.dart';
+import '../parameters/create_{{featureSnake}}_params.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+@injectable
+class Create{{Feature}}UseCase
+    extends NexoUseCase<{{Feature}}Entity, Create{{Feature}}Params> {
+  Create{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<{{Feature}}Entity> execute(Create{{Feature}}Params params) async {
+    // TODO(nexo): implement create.
+    throw UnimplementedError();
+  }
+}
+''';
+
+const _tplCrudUseCasesUpdate = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../parameters/update_{{featureSnake}}_params.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+@injectable
+class Update{{Feature}}UseCase
+    extends NexoUseCase<{{Feature}}Entity, Update{{Feature}}Params> {
+  Update{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<{{Feature}}Entity> execute(Update{{Feature}}Params params) async {
+    // TODO(nexo): implement update.
+    throw UnimplementedError();
+  }
+}
+''';
+
+const _tplCrudUseCasesDelete = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+@injectable
+class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
+  Delete{{Feature}}UseCase(
+    super._logger, {
+    required I{{Feature}}Repository repository,
+  }) : _repository = repository;
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<void> execute(String id) async {
+    // TODO(nexo): implement delete.
+    throw UnimplementedError();
+  }
+}
+''';
+
+const _tplCrudUseCasesCombined = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../parameters/create_{{featureSnake}}_params.dart';
+import '../parameters/update_{{featureSnake}}_params.dart';
 import '../repositories/i_{{featureSnake}}_repository.dart';
 
 @injectable

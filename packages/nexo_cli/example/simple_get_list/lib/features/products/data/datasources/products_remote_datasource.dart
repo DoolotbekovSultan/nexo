@@ -15,9 +15,8 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource
     final response = await get('products/');
     final data = response.data;
     if (data is! List) return const [];
-    return List.from(data)
-        .whereType<Map<String, dynamic>>()
-        .map(ProductsModel.fromJson)
-        .toList();
+    return List.from(
+      data,
+    ).whereType<Map<String, dynamic>>().map(ProductsModel.fromJson).toList();
   }
 }

@@ -124,11 +124,13 @@ final class FeatureOptions {
   bool get hasCubit => presentationStyle == PresentationStyle.cubit;
   bool get hasListCubit => presentationStyle == PresentationStyle.listCubit;
   bool get hasStateManagement => presentationStyle != PresentationStyle.none;
-  bool get hasCrud => crudOperations.isNotEmpty;
   bool get hasGet => crudOperations.contains('get');
   bool get hasCreate => crudOperations.contains('create');
   bool get hasUpdate => crudOperations.contains('update');
   bool get hasDelete => crudOperations.contains('delete');
+
+  /// Whether to generate write usecases (create/update/delete).
+  bool get hasWriteOperations => hasCreate || hasUpdate || hasDelete;
 
   /// Whether to generate request DTOs (only if create or update is selected).
   bool get hasRequests => hasCreate || hasUpdate;
@@ -137,6 +139,12 @@ final class FeatureOptions {
   String returnType(NameUtils names) {
     final entity = '${names.pascalCase}Entity';
     return isList ? 'List<$entity>' : entity;
+  }
+
+  /// The return type string for datasource methods (returns Model, not Entity).
+  String modelReturnType(NameUtils names) {
+    final model = '${names.pascalCase}Model';
+    return isList ? 'List<$model>' : model;
   }
 }
 
@@ -154,13 +162,30 @@ Map<String, String> parseJsonMapToFields(Map<String, dynamic> json) {
 }
 
 String _dartType(dynamic value) {
-  if (value is String) return 'String';
+  // Support type-name format: {"id": "int", "name": "String"}
+  if (value is String) {
+    final lower = value.toLowerCase();
+    if (lower == 'int') return 'int';
+    if (lower == 'double') return 'double';
+    if (lower == 'bool') return 'bool';
+    if (lower == 'string') return 'String';
+    if (lower == 'list' || lower == 'list<dynamic>') return 'List<dynamic>';
+    if (lower == 'map' || lower == 'map<String, dynamic>') {
+      return 'Map<String, dynamic>';
+    }
+    if (lower.endsWith('?')) {
+      // Nullable: "String?" -> "String?"
+      final base = _dartType(value.substring(0, value.length - 1));
+      return '$base?';
+    }
+    return 'String';
+  }
   if (value is int) return 'int';
   if (value is double) return 'double';
   if (value is bool) return 'bool';
   if (value is List) return 'List<dynamic>';
   if (value is Map) return 'Map<String, dynamic>';
-  if (value == null) return 'String?'; // nullable by default for null values
+  if (value == null) return 'String?';
   return 'String';
 }
 
@@ -275,7 +300,7 @@ abstract final class FeaturePlan {
     if (options.hasGet) {
       lines.add('domain/usecases/get_${s}_usecase.dart');
     }
-    if (options.hasCrud) {
+    if (options.hasWriteOperations) {
       lines.add('domain/usecases/${s}_usecases.dart');
     }
     if (options.hasRequests) {
@@ -325,7 +350,7 @@ abstract final class FeaturePlan {
       if (options.hasGet) {
         lines.add('domain/get_${s}_usecase_test.dart');
       }
-      if (options.hasCrud) {
+      if (options.hasWriteOperations) {
         lines.add('domain/${s}_usecases_test.dart');
       }
       lines.add('data/${s}_repository_test.dart');

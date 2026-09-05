@@ -7,10 +7,8 @@ import '../repositories/i_article_repository.dart';
 @injectable
 class CreateArticleUseCase
     extends NexoUseCase<ArticleEntity, CreateArticleParams> {
-  CreateArticleUseCase(
-    super._logger, {
-    required IArticleRepository repository,
-  }) : _repository = repository;
+  CreateArticleUseCase(super._logger, {required IArticleRepository repository})
+    : _repository = repository;
 
   final IArticleRepository _repository;
 
@@ -24,10 +22,8 @@ class CreateArticleUseCase
 @injectable
 class UpdateArticleUseCase
     extends NexoUseCase<ArticleEntity, UpdateArticleParams> {
-  UpdateArticleUseCase(
-    super._logger, {
-    required IArticleRepository repository,
-  }) : _repository = repository;
+  UpdateArticleUseCase(super._logger, {required IArticleRepository repository})
+    : _repository = repository;
 
   final IArticleRepository _repository;
 
@@ -40,10 +36,8 @@ class UpdateArticleUseCase
 
 @injectable
 class DeleteArticleUseCase extends NexoUseCase<void, String> {
-  DeleteArticleUseCase(
-    super._logger, {
-    required IArticleRepository repository,
-  }) : _repository = repository;
+  DeleteArticleUseCase(super._logger, {required IArticleRepository repository})
+    : _repository = repository;
 
   final IArticleRepository _repository;
 

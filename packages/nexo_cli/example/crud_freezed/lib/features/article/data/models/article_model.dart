@@ -5,9 +5,7 @@ part 'article_model.g.dart';
 
 @freezed
 abstract class ArticleModel with _$ArticleModel {
-  const factory ArticleModel({
-    required String id,
-  }) = _ArticleModel;
+  const factory ArticleModel({required String id}) = _ArticleModel;
 
   factory ArticleModel.fromJson(Map<String, dynamic> json) =>
       _$ArticleModelFromJson(json);

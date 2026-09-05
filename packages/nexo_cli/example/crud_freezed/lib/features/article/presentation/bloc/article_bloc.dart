@@ -8,19 +8,15 @@ import 'article_state.dart';
 
 @injectable
 class ArticleBloc extends NexoBloc<ArticleEvent, ArticleState> {
-  ArticleBloc({
-    required GetArticleUseCase getArticleUseCase,
-  })  : _getArticleUseCase = getArticleUseCase,
-        super(const ArticleState.loading()) {
+  ArticleBloc({required GetArticleUseCase getArticleUseCase})
+    : _getArticleUseCase = getArticleUseCase,
+      super(const ArticleState.loading()) {
     on<ArticleEvent>(_onEvent);
   }
 
   final GetArticleUseCase _getArticleUseCase;
 
-  Future<void> _onEvent(
-    ArticleEvent event,
-    Emitter<ArticleState> emit,
-  ) async {
+  Future<void> _onEvent(ArticleEvent event, Emitter<ArticleState> emit) async {
     await event.when(load: () => _onLoad(emit));
   }
 

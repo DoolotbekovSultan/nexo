@@ -7,10 +7,9 @@ import 'products_state.dart';
 
 @injectable
 class ProductsCubit extends NexoCubit<ProductsState> {
-  ProductsCubit({
-    required GetProductsUseCase getProductsUseCase,
-  })  : _getProductsUseCase = getProductsUseCase,
-        super(const NexoAsyncLoading());
+  ProductsCubit({required GetProductsUseCase getProductsUseCase})
+    : _getProductsUseCase = getProductsUseCase,
+      super(const NexoAsyncLoading());
 
   final GetProductsUseCase _getProductsUseCase;
 

@@ -6,10 +6,8 @@ import '../repositories/i_article_repository.dart';
 
 @injectable
 class GetArticleUseCase extends NexoUseCase<List<ArticleEntity>, NoParams> {
-  GetArticleUseCase(
-    super._logger, {
-    required IArticleRepository repository,
-  }) : _repository = repository;
+  GetArticleUseCase(super._logger, {required IArticleRepository repository})
+    : _repository = repository;
 
   final IArticleRepository _repository;
 

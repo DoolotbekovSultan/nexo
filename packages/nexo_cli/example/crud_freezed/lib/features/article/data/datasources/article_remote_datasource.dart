@@ -15,9 +15,8 @@ class ArticleRemoteDataSource extends BaseRemoteDataSource
     final response = await get('article/');
     final data = response.data;
     if (data is! List) return const [];
-    return List.from(data)
-        .whereType<Map<String, dynamic>>()
-        .map(ArticleModel.fromJson)
-        .toList();
+    return List.from(
+      data,
+    ).whereType<Map<String, dynamic>>().map(ArticleModel.fromJson).toList();
   }
 }
