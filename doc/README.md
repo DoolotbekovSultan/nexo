@@ -56,7 +56,6 @@ import 'package:nexo/nexo.dart';
 5. [UI-компоненты](nexo-ui.md)
 6. [Тестирование](nexo-testing.md)
 7. [Архитектура и паттерны](architecture.md)
-8. [Правила документирования](DOCUMENTATION_RULES.md)
 
 ---
 
