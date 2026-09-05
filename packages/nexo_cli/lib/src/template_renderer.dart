@@ -177,12 +177,15 @@ abstract final class TemplateRenderer {
   ) {
     // Generate field declarations from JSON.
     final fieldsDecl = _generateFieldsDecl(options.jsonFields);
+    final fieldsCtorParams = _generateFieldsCtorParams(options.jsonFields);
     final fieldsCtor = _generateFieldsCtor(options.jsonFields);
     final fieldsJson = _generateFieldsJson(options.jsonFields);
     final fieldsFromJson = _generateFieldsFromJson(options.jsonFields);
     final entityFields = _generateEntityFields(options.jsonFields);
+    final entityCtorParams = _generateEntityCtorParams(options.jsonFields);
     final mapperFields = _generateMapperFields(options.jsonFields);
     final requestFields = _generateRequestFields(options.jsonFields);
+    final requestCtorParams = _generateRequestCtorParams(options.jsonFields);
 
     // Return types.
     final retType = options.returnType(names);
@@ -191,12 +194,15 @@ abstract final class TemplateRenderer {
     // First: substitute generated content blocks.
     var result = template
         .replaceAll('{{fieldsDecl}}', fieldsDecl)
+        .replaceAll('{{fieldsCtorParams}}', fieldsCtorParams)
         .replaceAll('{{fieldsCtor}}', fieldsCtor)
         .replaceAll('{{fieldsJson}}', fieldsJson)
         .replaceAll('{{fieldsFromJson}}', fieldsFromJson)
         .replaceAll('{{entityFields}}', entityFields)
+        .replaceAll('{{entityCtorParams}}', entityCtorParams)
         .replaceAll('{{mapperFields}}', mapperFields)
         .replaceAll('{{requestFields}}', requestFields)
+        .replaceAll('{{requestCtorParams}}', requestCtorParams)
         .replaceAll('{{modelRetType}}', modelRetType)
         .replaceAll('{{retType}}', retType);
 
@@ -214,6 +220,11 @@ abstract final class TemplateRenderer {
   static String _generateFieldsDecl(Map<String, String>? fields) {
     if (fields == null || fields.isEmpty) return '  final String id;';
     return fields.entries.map((e) => '  final ${e.value} ${e.key};').join('\n');
+  }
+
+  static String _generateFieldsCtorParams(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) return '    String id,';
+    return fields.entries.map((e) => '    ${e.value} ${e.key},').join('\n');
   }
 
   static String _generateFieldsCtor(Map<String, String>? fields) {
@@ -272,6 +283,11 @@ abstract final class TemplateRenderer {
     return '  const {{Feature}}Entity({$params});\n$decls';
   }
 
+  static String _generateEntityCtorParams(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) return '    String id,';
+    return fields.entries.map((e) => '    ${e.value} ${e.key},').join('\n');
+  }
+
   static String _generateMapperFields(Map<String, String>? fields) {
     if (fields == null || fields.isEmpty) {
       // Default: model has 'id' field
@@ -290,6 +306,11 @@ abstract final class TemplateRenderer {
         .map((e) => '  final ${e.value} ${e.key};')
         .join('\n');
     return '  const {{RequestType}}({$params});\n$decls';
+  }
+
+  static String _generateRequestCtorParams(Map<String, String>? fields) {
+    if (fields == null || fields.isEmpty) return '    String id,';
+    return fields.entries.map((e) => '    ${e.value} ${e.key},').join('\n');
   }
 
   static String _snakeToLowerCamel(String snake) {
@@ -389,7 +410,7 @@ part '{{featureSnake}}_entity.freezed.dart';
 @freezed
 abstract class {{Feature}}Entity with _${{Feature}}Entity {
   const factory {{Feature}}Entity({
-{{fieldsDecl}}
+{{fieldsCtorParams}}
   }) = _{{Feature}}Entity;
 }
 ''';
@@ -426,7 +447,7 @@ part '{{featureSnake}}_model.g.dart';
 @freezed
 abstract class {{Feature}}Model with _${{Feature}}Model {
   const factory {{Feature}}Model({
-{{fieldsDecl}}
+{{fieldsCtorParams}}
   }) = _{{Feature}}Model;
 
   factory {{Feature}}Model.fromJson(Map<String, dynamic> json) =>
@@ -457,7 +478,7 @@ part 'create_{{featureSnake}}_request.g.dart';
 @freezed
 abstract class Create{{Feature}}Request with _Create{{Feature}}Request {
   const factory Create{{Feature}}Request({
-{{fieldsDecl}}
+{{fieldsCtorParams}}
   }) = _Create{{Feature}}Request;
 
   factory Create{{Feature}}Request.fromJson(Map<String, dynamic> json) =>
@@ -484,7 +505,7 @@ part 'update_{{featureSnake}}_request.g.dart';
 @freezed
 abstract class Update{{Feature}}Request with _Update{{Feature}}Request {
   const factory Update{{Feature}}Request({
-{{fieldsDecl}}
+{{fieldsCtorParams}}
   }) = _Update{{Feature}}Request;
 
   factory Update{{Feature}}Request.fromJson(Map<String, dynamic> json) =>

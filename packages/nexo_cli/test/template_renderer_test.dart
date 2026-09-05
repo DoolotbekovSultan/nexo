@@ -56,9 +56,10 @@ void main() {
           jsonFields: {'id': 'String', 'name': 'String', 'age': 'int'},
         ),
       );
-      expect(out, contains('final String id'));
-      expect(out, contains('final String name'));
-      expect(out, contains('final int age'));
+      // Freezed uses named params without final/semicolons in factory
+      expect(out, contains('String id,'));
+      expect(out, contains('String name,'));
+      expect(out, contains('int age,'));
     });
   });
 
@@ -97,9 +98,10 @@ void main() {
           jsonFields: {'id': 'String', 'title': 'String', 'count': 'int'},
         ),
       );
-      expect(out, contains('final String id'));
-      expect(out, contains('final String title'));
-      expect(out, contains('final int count'));
+      // Freezed uses named params without final/semicolons in factory
+      expect(out, contains('String id,'));
+      expect(out, contains('String title,'));
+      expect(out, contains('int count,'));
     });
   });
 
@@ -322,8 +324,9 @@ void main() {
         names,
         defaultOptions.copyWith(jsonFields: {'id': 'String', 'name': 'String'}),
       );
-      expect(out, contains('final String id'));
-      expect(out, contains('final String name'));
+      // Freezed uses named params without final/semicolons in factory
+      expect(out, contains('String id,'));
+      expect(out, contains('String name,'));
     });
   });
 
