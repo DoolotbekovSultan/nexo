@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'name_utils.dart';
 
 /// Presentation state management strategy.
-enum PresentationStyle { none, bloc, cubit, listCubit }
+enum PresentationStyle { none, bloc, cubit, asyncCubit, listCubit }
+
+/// Local storage backend for datasource generation.
+enum LocalStorageBackend { hive, sharedPrefs, secureStorage }
 
 /// Parsed feature flags (no I/O).
 final class FeatureOptions {
@@ -26,6 +29,13 @@ final class FeatureOptions {
     this.isList = true,
     this.viewModelName,
     this.root = 'lib/features',
+    this.pagination = false,
+    this.stream = false,
+    this.streamOnly = false,
+    this.optimistic = false,
+    this.validators = false,
+    this.localStorage,
+    this.getById = false,
   });
 
   /// Only presentation layer -- no data/ or domain/.
@@ -83,6 +93,27 @@ final class FeatureOptions {
   /// Base output directory (default: 'lib/features').
   final String root;
 
+  /// Generate paginated list with PaginationController.
+  final bool pagination;
+
+  /// Generate NexoStreamUseCase for real-time features.
+  final bool stream;
+
+  /// Generate only stream use case (no getAll).
+  final bool streamOnly;
+
+  /// Generate OptimisticUpdateHelper in write use cases.
+  final bool optimistic;
+
+  /// Generate NexoValidators in create/update params.
+  final bool validators;
+
+  /// Local storage backend (hive/sharedPrefs/secureStorage).
+  final LocalStorageBackend? localStorage;
+
+  /// Generate get_by_id use case.
+  final bool getById;
+
   FeatureOptions copyWith({
     bool? presentationOnly,
     PresentationStyle? presentationStyle,
@@ -102,6 +133,13 @@ final class FeatureOptions {
     bool? isList,
     String? viewModelName,
     String? root,
+    bool? pagination,
+    bool? stream,
+    bool? streamOnly,
+    bool? optimistic,
+    bool? validators,
+    LocalStorageBackend? localStorage,
+    bool? getById,
   }) {
     return FeatureOptions(
       presentationOnly: presentationOnly ?? this.presentationOnly,
@@ -122,14 +160,26 @@ final class FeatureOptions {
       isList: isList ?? this.isList,
       viewModelName: viewModelName ?? this.viewModelName,
       root: root ?? this.root,
+      pagination: pagination ?? this.pagination,
+      stream: stream ?? this.stream,
+      streamOnly: streamOnly ?? this.streamOnly,
+      optimistic: optimistic ?? this.optimistic,
+      validators: validators ?? this.validators,
+      localStorage: localStorage ?? this.localStorage,
+      getById: getById ?? this.getById,
     );
   }
 
   // Convenience getters.
   bool get hasBloc => presentationStyle == PresentationStyle.bloc;
   bool get hasCubit => presentationStyle == PresentationStyle.cubit;
+  bool get hasAsyncCubit => presentationStyle == PresentationStyle.asyncCubit;
   bool get hasListCubit => presentationStyle == PresentationStyle.listCubit;
   bool get hasStateManagement => presentationStyle != PresentationStyle.none;
+  bool get hasHive => localStorage == LocalStorageBackend.hive;
+  bool get hasSharedPrefs => localStorage == LocalStorageBackend.sharedPrefs;
+  bool get hasSecureStorage =>
+      localStorage == LocalStorageBackend.secureStorage;
   bool get hasGet => crudOperations.contains('get');
   bool get hasCreate => crudOperations.contains('create');
   bool get hasUpdate => crudOperations.contains('update');
@@ -309,6 +359,12 @@ abstract final class FeaturePlan {
     if (options.hasGet) {
       lines.add('domain/usecases/get_${s}_usecase.dart');
     }
+    if (options.getById) {
+      lines.add('domain/usecases/get_${s}_by_id_usecase.dart');
+    }
+    if (options.stream) {
+      lines.add('domain/usecases/watch_${s}_stream_usecase.dart');
+    }
     if (options.hasWriteOperations) {
       lines.add('domain/usecases/${s}_usecases.dart');
     }
@@ -322,19 +378,21 @@ abstract final class FeaturePlan {
     }
 
     // ── presentation/ ──
-    // Only generate cubit/bloc if there's a get operation or no CRUD operations
-    final hasPresentation = options.hasGet || options.crudOperations.isEmpty;
+    final hasPresentation =
+        options.hasGet ||
+        options.getById ||
+        options.hasAsyncCubit ||
+        options.crudOperations.isEmpty;
     if (hasPresentation) {
       if (options.hasBloc) {
         lines
           ..add('presentation/bloc/${s}_bloc.dart')
           ..add('presentation/bloc/${s}_event.dart')
           ..add('presentation/bloc/${s}_state.dart');
-      } else if (options.hasCubit) {
-        lines
-          ..add('presentation/cubit/${s}_cubit.dart')
-          ..add('presentation/cubit/${s}_state.dart');
-      } else if (options.hasListCubit) {
+      } else if (options.hasAsyncCubit) {
+        // NexoAsyncCubit doesn't need a separate state file
+        lines.add('presentation/cubit/${s}_cubit.dart');
+      } else if (options.hasCubit || options.hasListCubit) {
         lines
           ..add('presentation/cubit/${s}_cubit.dart')
           ..add('presentation/cubit/${s}_state.dart');

@@ -11,17 +11,28 @@ abstract final class TemplateRenderer {
   static String render(
     String relativePosixPath,
     NameUtils names,
-    FeatureOptions options,
-  ) {
+    FeatureOptions options, {
+    String? packageName,
+  }) {
     final norm = relativePosixPath.replaceAll(r'\', '/');
     final template = _pickTemplate(norm, options);
-    return _substitute(template, names, options);
+    return _substitute(template, names, options, packageName: packageName);
   }
 
   static String _pickTemplate(String norm, FeatureOptions options) {
     // ── Tests ──
     if (norm.endsWith('_test.dart')) {
       if (norm.contains('mapper')) return _tplMapperTest;
+      if (norm.contains('cubit') || norm.contains('bloc')) {
+        return options.hasBloc ? _tplBlocTest : _tplCubitTest;
+      }
+      if (norm.contains('usecase') || norm.contains('use_case')) {
+        return _tplUseCaseTest;
+      }
+      if (norm.contains('repository')) return _tplRepositoryTest;
+      if (norm.contains('datasource') || norm.contains('data_source')) {
+        return _tplDatasourceTest;
+      }
       return _tplTest;
     }
 
@@ -31,8 +42,14 @@ abstract final class TemplateRenderer {
     // ── Extensions ──
     if (norm.endsWith('_extensions.dart')) return _tplExtensions;
 
-    // ── Screen (presentation-only) ──
-    if (norm.endsWith('_screen.dart')) return _tplScreen;
+    // ── Screen ──
+    if (norm.endsWith('_screen.dart')) {
+      if (options.hasAsyncCubit) return _tplScreenAsyncCubit;
+      if (options.hasListCubit || (options.hasCubit && options.isList)) {
+        return _tplScreenList;
+      }
+      return _tplScreen;
+    }
 
     // ── Entity ──
     if (norm.endsWith('_entity.dart')) {
@@ -92,6 +109,38 @@ abstract final class TemplateRenderer {
       return options.isList ? _tplRemoteDatasource : _tplRemoteDatasourceSingle;
     }
     if (norm.endsWith('_local_datasource.dart')) {
+      // Check for specific storage backend
+      if (options.hasHive) {
+        if (options.mock) {
+          return options.isList
+              ? _tplLocalDatasourceHiveWithMock
+              : _tplLocalDatasourceHive;
+        }
+        return options.isList
+            ? _tplLocalDatasourceHive
+            : _tplLocalDatasourceSingleHive;
+      }
+      if (options.hasSharedPrefs) {
+        if (options.mock) {
+          return options.isList
+              ? _tplLocalDatasourceSharedPrefsWithMock
+              : _tplLocalDatasourceSharedPrefs;
+        }
+        return options.isList
+            ? _tplLocalDatasourceSharedPrefs
+            : _tplLocalDatasourceSingleSharedPrefs;
+      }
+      if (options.hasSecureStorage) {
+        if (options.mock) {
+          return options.isList
+              ? _tplLocalDatasourceSecureStorageWithMock
+              : _tplLocalDatasourceSecureStorage;
+        }
+        return options.isList
+            ? _tplLocalDatasourceSecureStorage
+            : _tplLocalDatasourceSingleSecureStorage;
+      }
+      // Default: stub with mock support
       if (options.mock) {
         return options.isList
             ? _tplLocalDatasourceWithMock
@@ -108,20 +157,46 @@ abstract final class TemplateRenderer {
     // ── Repository interface (domain) ──
     if (norm.contains('domain/repositories/') &&
         norm.startsWith('domain/repositories/i_')) {
+      if (options.streamOnly) return _tplRepositoryInterfaceStreamOnly;
+      if (options.stream) return _tplRepositoryInterfaceStream;
       return _tplRepositoryInterface;
     }
 
     // ── Repository impl (data) ──
     if (norm.contains('data/repositories/') &&
         norm.endsWith('_repository.dart')) {
+      if (options.streamOnly) {
+        if (!options.injectable)
+          return _tplRepositoryImplStreamOnlyNoInjectable;
+        return _tplRepositoryImplStreamOnly;
+      }
+      if (options.stream) {
+        if (!options.injectable) return _tplRepositoryImplStreamNoInjectable;
+        return _tplRepositoryImplStream;
+      }
       if (!options.injectable) return _tplRepositoryImplNoInjectable;
       return _tplRepositoryImpl;
     }
 
-    // ── UseCase (get) ──
+    // ── UseCase (get all) ──
     if (norm.contains('domain/usecases/') &&
-        norm.startsWith('domain/usecases/get_')) {
+        norm.startsWith('domain/usecases/get_') &&
+        !norm.contains('by_id')) {
       return _tplUseCase;
+    }
+
+    // ── UseCase (get by id) ──
+    if (norm.contains('domain/usecases/') &&
+        norm.contains('get_') &&
+        norm.contains('_by_id_')) {
+      return _tplGetByIdUseCase;
+    }
+
+    // ── UseCase (stream/watch) ──
+    if (norm.contains('domain/usecases/') &&
+        norm.startsWith('domain/usecases/watch_')) {
+      if (options.streamOnly) return _tplStreamUseCaseOnly;
+      return _tplStreamUseCase;
     }
 
     // ── CRUD UseCases ──
@@ -143,10 +218,12 @@ abstract final class TemplateRenderer {
     // ── Parameters ──
     if (norm.contains('domain/parameters/') &&
         norm.startsWith('domain/parameters/create_')) {
+      if (options.validators) return _tplCreateParamsWithValidators;
       return _tplCreateParams;
     }
     if (norm.contains('domain/parameters/') &&
         norm.startsWith('domain/parameters/update_')) {
+      if (options.validators) return _tplUpdateParamsWithValidators;
       return _tplUpdateParams;
     }
 
@@ -160,7 +237,11 @@ abstract final class TemplateRenderer {
 
     // ── Cubit ──
     if (norm.contains('presentation/cubit/') && norm.endsWith('_cubit.dart')) {
+      if (options.hasAsyncCubit) return _tplAsyncCubit;
       if (options.hasListCubit) return _tplListCubit;
+      if (options.optimistic && options.hasWriteOperations) {
+        return _tplCubitOptimistic;
+      }
       if (!options.freezed) return _tplCubitNoFreezed;
       return _tplCubit;
     }
@@ -183,8 +264,9 @@ abstract final class TemplateRenderer {
   static String _substitute(
     String template,
     NameUtils names,
-    FeatureOptions options,
-  ) {
+    FeatureOptions options, {
+    String? packageName,
+  }) {
     // Generate field declarations from JSON.
     final fieldsDecl = _generateFieldsDecl(options.jsonFields);
     final fieldsCtorParams = _generateFieldsCtorParams(options.jsonFields);
@@ -236,7 +318,8 @@ abstract final class TemplateRenderer {
     result = result
         .replaceAll('{{featureSnake}}', names.snakeCase)
         .replaceAll('{{Feature}}', names.pascalCase)
-        .replaceAll('{{feature}}', _snakeToLowerCamel(names.snakeCase));
+        .replaceAll('{{feature}}', _snakeToLowerCamel(names.snakeCase))
+        .replaceAll('{{packageName}}', packageName ?? names.snakeCase);
 
     return result;
   }
@@ -766,6 +849,317 @@ class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
 ''';
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Hive local datasource
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplLocalDatasourceHive = r'''
+import 'package:hive/hive.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._box});
+
+  final Box<Map> _box;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final data = _box.get(_key);
+    if (data == null) return const [];
+    final list = data['items'] as List<dynamic>? ?? [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+
+  Future<void> saveAll(List<{{Feature}}Model> items) async {
+    await _box.put(_key, {
+      'items': items.map((e) => e.toJson()).toList(),
+    });
+  }
+}
+''';
+
+const _tplLocalDatasourceHiveWithMock = r'''
+import 'package:hive/hive.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@Named('local')
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._box});
+
+  final Box<Map> _box;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final data = _box.get(_key);
+    if (data == null) return const [];
+    final list = data['items'] as List<dynamic>? ?? [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+
+  Future<void> saveAll(List<{{Feature}}Model> items) async {
+    await _box.put(_key, {
+      'items': items.map((e) => e.toJson()).toList(),
+    });
+  }
+}
+''';
+
+const _tplLocalDatasourceSingleHive = r'''
+import 'package:hive/hive.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._box});
+
+  final Box<Map> _box;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final data = _box.get(_key);
+    if (data == null) return const [];
+    return {{Feature}}Model.fromJson(data);
+  }
+
+  Future<void> save({{Feature}}Model item) async {
+    await _box.put(_key, item.toJson());
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SharedPreferences local datasource
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplLocalDatasourceSharedPrefs = r'''
+import 'dart:convert';
+
+import 'package:injectable/injectable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._prefs});
+
+  final SharedPreferences _prefs;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final raw = _prefs.getString(_key);
+    if (raw == null) return const [];
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+
+  Future<void> saveAll(List<{{Feature}}Model> items) async {
+    final json = items.map((e) => e.toJson()).toList();
+    await _prefs.setString(_key, jsonEncode(json));
+  }
+}
+''';
+
+const _tplLocalDatasourceSharedPrefsWithMock = r'''
+import 'dart:convert';
+
+import 'package:injectable/injectable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@Named('local')
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._prefs});
+
+  final SharedPreferences _prefs;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final raw = _prefs.getString(_key);
+    if (raw == null) return const [];
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+
+  Future<void> saveAll(List<{{Feature}}Model> items) async {
+    final json = items.map((e) => e.toJson()).toList();
+    await _prefs.setString(_key, jsonEncode(json));
+  }
+}
+''';
+
+const _tplLocalDatasourceSingleSharedPrefs = r'''
+import 'dart:convert';
+
+import 'package:injectable/injectable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._prefs});
+
+  final SharedPreferences _prefs;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final raw = _prefs.getString(_key);
+    if (raw == null) throw StateError('No cached {{Feature}}');
+    return {{Feature}}Model.fromJson(jsonDecode(raw));
+  }
+
+  Future<void> save({{Feature}}Model item) async {
+    await _prefs.setString(_key, jsonEncode(item.toJson()));
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SecureStorage local datasource
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplLocalDatasourceSecureStorage = r'''
+import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._storage});
+
+  final FlutterSecureStorage _storage;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final raw = await _storage.read(key: _key);
+    if (raw == null) return const [];
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+
+  Future<void> saveAll(List<{{Feature}}Model> items) async {
+    final json = items.map((e) => e.toJson()).toList();
+    await _storage.write(key: _key, value: jsonEncode(json));
+  }
+}
+''';
+
+const _tplLocalDatasourceSecureStorageWithMock = r'''
+import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@Named('local')
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._storage});
+
+  final FlutterSecureStorage _storage;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final raw = await _storage.read(key: _key);
+    if (raw == null) return const [];
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map({{Feature}}Model.fromJson)
+        .toList();
+  }
+
+  Future<void> saveAll(List<{{Feature}}Model> items) async {
+    final json = items.map((e) => e.toJson()).toList();
+    await _storage.write(key: _key, value: jsonEncode(json));
+  }
+}
+''';
+
+const _tplLocalDatasourceSingleSecureStorage = r'''
+import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:injectable/injectable.dart';
+
+import 'i_local_{{featureSnake}}_data_source.dart';
+import '../models/{{featureSnake}}_model.dart';
+
+@LazySingleton(as: ILocal{{Feature}}DataSource)
+class {{Feature}}LocalDataSource implements ILocal{{Feature}}DataSource {
+  {{Feature}}LocalDataSource({required this._storage});
+
+  final FlutterSecureStorage _storage;
+
+  static const _key = '{{featureSnake}}';
+
+  @override
+  Future<{{modelRetType}}> getAll() async {
+    final raw = await _storage.read(key: _key);
+    if (raw == null) throw StateError('No cached {{Feature}}');
+    return {{Feature}}Model.fromJson(jsonDecode(raw));
+  }
+
+  Future<void> save({{Feature}}Model item) async {
+    await _storage.write(key: _key, value: jsonEncode(item.toJson()));
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Mock remote datasource
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -868,10 +1262,27 @@ extension {{Feature}}ListMapper on List<{{Feature}}Model> {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const _tplRepositoryInterface = r'''
-import '../entities/{{featureSnake}}_entity.dart';
+import '../../domain/entities/{{featureSnake}}_entity.dart';
 
 abstract interface class I{{Feature}}Repository {
   Future<{{retType}}> getAll();
+}
+''';
+
+const _tplRepositoryInterfaceStream = r'''
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+
+abstract interface class I{{Feature}}Repository {
+  Future<{{retType}}> getAll();
+  Stream<{{retType}}> watchAll();
+}
+''';
+
+const _tplRepositoryInterfaceStreamOnly = r'''
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+
+abstract interface class I{{Feature}}Repository {
+  Stream<{{retType}}> watchAll();
 }
 ''';
 
@@ -916,6 +1327,100 @@ class {{Feature}}Repository implements I{{Feature}}Repository {
   Future<{{retType}}> getAll() async {
     final models = await _remoteDatasource.getAll();
 {{noMapperBody}}
+  }
+}
+''';
+
+const _tplRepositoryImplStream = r'''
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
+import '../datasources/i_remote_{{featureSnake}}_data_source.dart';
+{{mapperImport}}
+
+@LazySingleton(as: I{{Feature}}Repository)
+class {{Feature}}Repository implements I{{Feature}}Repository {
+  {{Feature}}Repository({{{namedParam}}required this._remoteDatasource});
+
+  final IRemote{{Feature}}DataSource _remoteDatasource;
+
+  @override
+  Future<{{retType}}> getAll() async {
+    final models = await _remoteDatasource.getAll();
+{{noMapperBody}}
+  }
+
+  @override
+  Stream<{{retType}}> watchAll() {
+    // TODO(nexo): implement stream from datasource.
+    return const Stream.empty();
+  }
+}
+''';
+
+const _tplRepositoryImplStreamNoInjectable = r'''
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
+import '../datasources/{{featureSnake}}_remote_datasource.dart';
+{{mapperImport}}
+
+class {{Feature}}Repository implements I{{Feature}}Repository {
+  {{Feature}}Repository({required this._remoteDatasource});
+
+  final {{Feature}}RemoteDataSource _remoteDatasource;
+
+  @override
+  Future<{{retType}}> getAll() async {
+    final models = await _remoteDatasource.getAll();
+{{noMapperBody}}
+  }
+
+  @override
+  Stream<{{retType}}> watchAll() {
+    // TODO(nexo): implement stream from datasource.
+    return const Stream.empty();
+  }
+}
+''';
+
+const _tplRepositoryImplStreamOnly = r'''
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
+import '../datasources/i_remote_{{featureSnake}}_data_source.dart';
+{{mapperImport}}
+
+@LazySingleton(as: I{{Feature}}Repository)
+class {{Feature}}Repository implements I{{Feature}}Repository {
+  {{Feature}}Repository({{{namedParam}}required this._remoteDatasource});
+
+  final IRemote{{Feature}}DataSource _remoteDatasource;
+
+  @override
+  Stream<{{retType}}> watchAll() {
+    // TODO(nexo): implement stream from datasource.
+    return const Stream.empty();
+  }
+}
+''';
+
+const _tplRepositoryImplStreamOnlyNoInjectable = r'''
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/repositories/i_{{featureSnake}}_repository.dart';
+import '../datasources/{{featureSnake}}_remote_datasource.dart';
+{{mapperImport}}
+
+class {{Feature}}Repository implements I{{Feature}}Repository {
+  {{Feature}}Repository({required this._remoteDatasource});
+
+  final {{Feature}}RemoteDataSource _remoteDatasource;
+
+  @override
+  Stream<{{retType}}> watchAll() {
+    // TODO(nexo): implement stream from datasource.
+    return const Stream.empty();
   }
 }
 ''';
@@ -972,9 +1477,24 @@ class Create{{Feature}}UseCase
   @override
   Future<{{Feature}}Entity> execute(Create{{Feature}}Params params) async {
     // TODO(nexo): implement create.
-    throw UnimplementedError();
+    return (await _repository.getAll()).first;
   }
 }
+
+/// Helper for optimistic create:
+/// 1. Apply optimistic state immediately
+/// 2. Call this use case
+/// 3. On success, replace with real data; on failure, rollback.
+///
+/// Usage:
+/// ```dart
+/// final result = await performOptimistic<MyState, MyEntity>(
+///   optimisticState: MyState.loading(),
+///   rollbackState: previousState,
+///   action: () => createUseCase(params),
+///   onSuccess: (entity) => MyState.success(data: entity),
+/// );
+/// ```
 ''';
 
 const _tplCrudUseCasesUpdate = r'''
@@ -998,7 +1518,7 @@ class Update{{Feature}}UseCase
   @override
   Future<{{Feature}}Entity> execute(Update{{Feature}}Params params) async {
     // TODO(nexo): implement update.
-    throw UnimplementedError();
+    return (await _repository.getAll()).first;
   }
 }
 ''';
@@ -1021,7 +1541,7 @@ class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
   @override
   Future<void> execute(String id) async {
     // TODO(nexo): implement delete.
-    throw UnimplementedError();
+    await _repository.getAll();
   }
 }
 ''';
@@ -1035,6 +1555,7 @@ import '../parameters/create_{{featureSnake}}_params.dart';
 import '../parameters/update_{{featureSnake}}_params.dart';
 import '../repositories/i_{{featureSnake}}_repository.dart';
 
+/// Use case for creating a new {{Feature}}.
 @injectable
 class Create{{Feature}}UseCase
     extends NexoUseCase<{{Feature}}Entity, Create{{Feature}}Params> {
@@ -1048,10 +1569,11 @@ class Create{{Feature}}UseCase
   @override
   Future<{{Feature}}Entity> execute(Create{{Feature}}Params params) async {
     // TODO(nexo): implement create.
-    throw UnimplementedError();
+    return (await _repository.getAll()).first;
   }
 }
 
+/// Use case for updating an existing {{Feature}}.
 @injectable
 class Update{{Feature}}UseCase
     extends NexoUseCase<{{Feature}}Entity, Update{{Feature}}Params> {
@@ -1065,10 +1587,11 @@ class Update{{Feature}}UseCase
   @override
   Future<{{Feature}}Entity> execute(Update{{Feature}}Params params) async {
     // TODO(nexo): implement update.
-    throw UnimplementedError();
+    return (await _repository.getAll()).first;
   }
 }
 
+/// Use case for deleting a {{Feature}} by ID.
 @injectable
 class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
   Delete{{Feature}}UseCase(
@@ -1081,7 +1604,89 @@ class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
   @override
   Future<void> execute(String id) async {
     // TODO(nexo): implement delete.
-    throw UnimplementedError();
+    await _repository.getAll();
+  }
+}
+''';
+
+const _tplCubitOptimistic = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/parameters/create_{{featureSnake}}_params.dart';
+import '../../domain/parameters/update_{{featureSnake}}_params.dart';
+import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
+import '{{featureSnake}}_state.dart';
+
+@injectable
+class {{Feature}}Cubit extends NexoCubit<{{Feature}}State> {
+  {{Feature}}Cubit({
+    required this._get{{Feature}}UseCase,
+    required this._create{{Feature}}UseCase,
+    required this._update{{Feature}}UseCase,
+    required this._delete{{Feature}}UseCase,
+  }) : super(const {{Feature}}State.loading());
+
+  final Get{{Feature}}UseCase _get{{Feature}}UseCase;
+  final Create{{Feature}}UseCase _create{{Feature}}UseCase;
+  final Update{{Feature}}UseCase _update{{Feature}}UseCase;
+  final Delete{{Feature}}UseCase _delete{{Feature}}UseCase;
+
+  Future<void> load() async {
+    await executeEither<{{retType}}>(
+      action: () => _get{{Feature}}UseCase(const NoParams()),
+      onLoading: () => const {{Feature}}State.loading(),
+      onSuccess: (data) => {{Feature}}State.success(data: data),
+      onError: (failure) => {{Feature}}State.error(failure: failure),
+    );
+  }
+
+  Future<void> create(Create{{Feature}}Params params) async {
+    final result = await performOptimistic<{{Feature}}State, {{Feature}}Entity>(
+      optimisticState: const {{Feature}}State.loading(),
+      rollbackState: state,
+      action: () => _create{{Feature}}UseCase(params),
+      onSuccess: (entity) => state.copyWith(
+        data: [entity, ...?state.data],
+      ),
+    );
+    emit(result.state);
+    if (result.failure != null) {
+      emit({{Feature}}State.error(failure: result.failure));
+    }
+  }
+
+  Future<void> update(Update{{Feature}}Params params) async {
+    final result = await performOptimistic<{{Feature}}State, {{Feature}}Entity>(
+      optimisticState: const {{Feature}}State.loading(),
+      rollbackState: state,
+      action: () => _update{{Feature}}UseCase(params),
+      onSuccess: (entity) {
+        final data = state.data?.map((e) => e.id == entity.id ? entity : e).toList();
+        return state.copyWith(data: data);
+      },
+    );
+    emit(result.state);
+    if (result.failure != null) {
+      emit({{Feature}}State.error(failure: result.failure));
+    }
+  }
+
+  Future<void> delete(String id) async {
+    final result = await performOptimistic<{{Feature}}State, void>(
+      optimisticState: const {{Feature}}State.loading(),
+      rollbackState: state,
+      action: () => _delete{{Feature}}UseCase(id),
+      onSuccess: (_) {
+        final data = state.data?.where((e) => e.id != id).toList();
+        return state.copyWith(data: data);
+      },
+    );
+    emit(result.state);
+    if (result.failure != null) {
+      emit({{Feature}}State.error(failure: result.failure));
+    }
   }
 }
 ''';
@@ -1091,16 +1696,80 @@ class Delete{{Feature}}UseCase extends NexoUseCase<void, String> {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const _tplCreateParams = r'''
+import 'package:nexo/nexo_core.dart';
+
 class Create{{Feature}}Params {
   const Create{{Feature}}Params({required this.id});
+
   final String id;
+
+  /// Validates this params instance using NexoValidators.
+  /// Returns null if valid, otherwise an error message.
+  static String? validateId(String? value) {
+    return NexoValidators.requiredField(fieldName: 'id')(value);
+  }
+}
+''';
+
+const _tplCreateParamsWithValidators = r'''
+import 'package:nexo/nexo_core.dart';
+
+class Create{{Feature}}Params {
+  const Create{{Feature}}Params({required this.id});
+
+  final String id;
+
+  /// Validates this params instance using NexoValidators.
+  /// Returns null if valid, otherwise an error message.
+  static String? validateId(String? value) {
+    return NexoValidators.requiredField(fieldName: 'id')(value);
+  }
+
+  /// Validates all fields. Returns null if valid, otherwise first error message.
+  static String? validateAll({required String? id}) {
+    return NexoValidators.compose<String>([
+      NexoValidators.requiredField(fieldName: 'id'),
+    ])(id);
+  }
 }
 ''';
 
 const _tplUpdateParams = r'''
+import 'package:nexo/nexo_core.dart';
+
 class Update{{Feature}}Params {
   const Update{{Feature}}Params({required this.id});
+
   final String id;
+
+  /// Validates this params instance using NexoValidators.
+  /// Returns null if valid, otherwise an error message.
+  static String? validateId(String? value) {
+    return NexoValidators.requiredField(fieldName: 'id')(value);
+  }
+}
+''';
+
+const _tplUpdateParamsWithValidators = r'''
+import 'package:nexo/nexo_core.dart';
+
+class Update{{Feature}}Params {
+  const Update{{Feature}}Params({required this.id});
+
+  final String id;
+
+  /// Validates this params instance using NexoValidators.
+  /// Returns null if valid, otherwise an error message.
+  static String? validateId(String? value) {
+    return NexoValidators.requiredField(fieldName: 'id');
+  }
+
+  /// Validates all fields. Returns null if valid, otherwise first error message.
+  static String? validateAll({required String? id}) {
+    return NexoValidators.compose<String>([
+      NexoValidators.requiredField(fieldName: 'id'),
+    ])(id);
+  }
 }
 ''';
 
@@ -1318,6 +1987,240 @@ class {{Feature}}Widget extends StatelessWidget {
 ''';
 
 // ──────────────────────────────────────────────────────────────────────────────
+// NexoAsyncCubit (simpler pattern: fetch() + load/retry/refresh)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplAsyncCubit = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:nexo/nexo_errors.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
+
+/// Cubit using NexoAsyncCubit pattern.
+/// State is `NexoAsyncState<T>` (idle/loading/success/failure).
+/// Use .load() to fetch, .retry() after error, .refresh() for silent reload.
+@injectable
+class {{Feature}}Cubit extends NexoAsyncCubit<{{retType}}> {
+  {{Feature}}Cubit({required this._get{{Feature}}UseCase});
+
+  final Get{{Feature}}UseCase _get{{Feature}}UseCase;
+
+  @override
+  Future<Result<{{retType}}>> fetch() => _get{{Feature}}UseCase(const NoParams());
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// NexoStreamUseCase (real-time / WebSocket / Firestore)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplStreamUseCase = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+/// Stream use case for real-time data (WebSocket, Firestore, etc.).
+/// Returns `Stream<Result<T>>` that emits on each update.
+@injectable
+class Watch{{Feature}}StreamUseCase
+    extends NexoStreamUseCase<{{retType}}, NoParams> {
+  Watch{{Feature}}StreamUseCase(
+    super._logger, {
+    required this._repository,
+  });
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Stream<{{retType}}> build(NoParams params) {
+    return _repository.watchAll();
+  }
+}
+''';
+
+const _tplStreamUseCaseOnly = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+/// Stream-only use case for real-time data (WebSocket, Firestore, etc.).
+/// Returns `Stream<Result<T>>` that emits on each update.
+@injectable
+class Watch{{Feature}}StreamUseCase
+    extends NexoStreamUseCase<{{retType}}, NoParams> {
+  Watch{{Feature}}StreamUseCase(
+    super._logger, {
+    required this._repository,
+  });
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Stream<{{retType}}> build(NoParams params) {
+    return _repository.watchAll();
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Get by ID UseCase
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplGetByIdUseCase = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../entities/{{featureSnake}}_entity.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+/// Use case for getting a single {{Feature}} by ID.
+@injectable
+class Get{{Feature}}ByIdUseCase
+    extends NexoUseCase<{{Feature}}Entity, String> {
+  Get{{Feature}}ByIdUseCase(
+    super._logger, {
+    required this._repository,
+  });
+
+  final I{{Feature}}Repository _repository;
+
+  @override
+  Future<{{Feature}}Entity> execute(String id) async {
+    // TODO(nexo): implement get by id.
+    return (await _repository.getAll()).first;
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Screen with NexoAsyncCubit (uses NexoAsyncStateBuilder)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplScreenAsyncCubit = r'''
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:nexo/nexo_ui.dart';
+
+import '../domain/entities/{{featureSnake}}_entity.dart';
+import 'cubit/{{featureSnake}}_cubit.dart';
+
+class {{Feature}}Screen extends StatelessWidget {
+  const {{Feature}}Screen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => GetIt.instance<{{Feature}}Cubit>()..load(),
+      child: const _{{Feature}}View(),
+    );
+  }
+}
+
+class _{{Feature}}View extends StatelessWidget {
+  const _{{Feature}}View();
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.watch<{{Feature}}Cubit>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('{{Feature}}')),
+      body: NexoAsyncStateBuilder<{{retType}}>(
+        state: cubit.state,
+        success: (context, data) {
+          if (data.isEmpty) {
+            return const NexoEmptyView(
+              title: 'No data',
+              subtitle: 'There is nothing to show here.',
+            );
+          }
+          return ListView.builder(
+            itemCount: data.length,
+            itemBuilder: (context, index) => ListTile(
+              title: Text(data[index].toString()),
+            ),
+          );
+        },
+        failure: (context, failure) => NexoFailureView(
+          failure: failure,
+          onRetry: () => cubit.retry(),
+        ),
+      ),
+    );
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Screen with list (uses NexoEmptyView)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplScreenList = r'''
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:nexo/nexo_ui.dart';
+
+import 'cubit/{{featureSnake}}_cubit.dart';
+import 'cubit/{{featureSnake}}_state.dart';
+
+class {{Feature}}Screen extends StatelessWidget {
+  const {{Feature}}Screen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => GetIt.instance<{{Feature}}Cubit>()..load(),
+      child: const _{{Feature}}View(),
+    );
+  }
+}
+
+class _{{Feature}}View extends StatelessWidget {
+  const _{{Feature}}View();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('{{Feature}}')),
+      body: BlocBuilder<{{Feature}}Cubit, {{Feature}}State>(
+        builder: (context, state) {
+          return state.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            success: (data) => data.isEmpty
+                ? const NexoEmptyView(
+                    title: 'No items',
+                    subtitle: 'Nothing found.',
+                  )
+                : ListView.builder(
+                    itemCount: data.length,
+                    itemBuilder: (context, index) => ListTile(
+                      title: Text(data[index].toString()),
+                    ),
+                  ),
+            error: (failure) => failure != null
+                ? NexoFailureView(
+                    failure: failure,
+                    onRetry: () => context.read<{{Feature}}Cubit>().load(),
+                  )
+                : const Center(child: Text('Unknown error')),
+          );
+        },
+      ),
+    );
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Tests
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -1334,8 +2237,8 @@ void main() {
 const _tplMapperTest = r'''
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:{{featureSnake}}/data/models/{{featureSnake}}_model.dart';
-import 'package:{{featureSnake}}/data/mappers/{{featureSnake}}_mapper.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/data/models/{{featureSnake}}_model.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/data/mappers/{{featureSnake}}_mapper.dart';
 
 void main() {
   group('{{Feature}}Mapper', () {
@@ -1343,6 +2246,239 @@ void main() {
       const model = {{Feature}}Model(id: '1');
       final entity = model.toDomain();
       expect(entity.id, '1');
+    });
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Cubit test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplCubitTest = r'''
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nexo/nexo_errors.dart';
+
+import 'package:{{packageName}}/features/{{featureSnake}}/domain/usecases/get_{{featureSnake}}_usecase.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/presentation/cubit/{{featureSnake}}_cubit.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/presentation/cubit/{{featureSnake}}_state.dart';
+
+@GenerateMocks([Get{{Feature}}UseCase])
+import '{{featureSnake}}_cubit_test.mocks.dart';
+
+void main() {
+  late {{Feature}}Cubit cubit;
+  late MockGet{{Feature}}UseCase mockGetUseCase;
+
+  setUp(() {
+    mockGetUseCase = MockGet{{Feature}}UseCase();
+    cubit = {{Feature}}Cubit(get{{Feature}}UseCase: mockGetUseCase);
+  });
+
+  tearDown(() {
+    cubit.close();
+  });
+
+  group('{{Feature}}Cubit', () {
+    test('initial state is loading', () {
+      expect(cubit.state, isA<{{Feature}}State>());
+    });
+
+    blocTest<{{Feature}}Cubit, {{Feature}}State>(
+      'emits [loading, success] when load succeeds',
+      build: () {
+        when(mockGetUseCase(any)).thenAnswer(
+          (_) async => Result.success(const []),
+        );
+        return cubit;
+      },
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        isA<{{Feature}}State>(),
+      ],
+    );
+
+    blocTest<{{Feature}}Cubit, {{Feature}}State>(
+      'emits [loading, error] when load fails',
+      build: () {
+        when(mockGetUseCase(any)).thenAnswer(
+          (_) async => Result.failure(const Failure.unknown(message: 'error')),
+        );
+        return cubit;
+      },
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        isA<{{Feature}}State>(),
+      ],
+    );
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Bloc test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplBlocTest = r'''
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nexo/nexo_errors.dart';
+
+import 'package:{{packageName}}/features/{{featureSnake}}/domain/usecases/get_{{featureSnake}}_usecase.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/presentation/bloc/{{featureSnake}}_bloc.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/presentation/bloc/{{featureSnake}}_event.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/presentation/bloc/{{featureSnake}}_state.dart';
+
+@GenerateMocks([Get{{Feature}}UseCase])
+import '{{featureSnake}}_bloc_test.mocks.dart';
+
+void main() {
+  late {{Feature}}Bloc bloc;
+  late MockGet{{Feature}}UseCase mockGetUseCase;
+
+  setUp(() {
+    mockGetUseCase = MockGet{{Feature}}UseCase();
+    bloc = {{Feature}}Bloc(get{{Feature}}UseCase: mockGetUseCase);
+  });
+
+  tearDown(() {
+    bloc.close();
+  });
+
+  group('{{Feature}}Bloc', () {
+    test('initial state is loading', () {
+      expect(bloc.state, isA<{{Feature}}State>());
+    });
+
+    blocTest<{{Feature}}Bloc, {{Feature}}State>(
+      'emits [loading, success] on load event',
+      build: () {
+        when(mockGetUseCase(any)).thenAnswer(
+          (_) async => Result.success(const []),
+        );
+        return bloc;
+      },
+      act: (bloc) => bloc.add(const {{Feature}}Event.load()),
+      expect: () => [
+        isA<{{Feature}}State>(),
+      ],
+    );
+
+    blocTest<{{Feature}}Bloc, {{Feature}}State>(
+      'emits [loading, error] when load fails',
+      build: () {
+        when(mockGetUseCase(any)).thenAnswer(
+          (_) async => Result.failure(const Failure.unknown(message: 'error')),
+        );
+        return bloc;
+      },
+      act: (bloc) => bloc.add(const {{Feature}}Event.load()),
+      expect: () => [
+        isA<{{Feature}}State>(),
+      ],
+    );
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UseCase test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplUseCaseTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nexo/nexo_core.dart';
+import 'package:nexo/nexo_errors.dart';
+import 'package:nexo/nexo_logger.dart';
+import 'package:talker/talker.dart';
+
+import 'package:{{packageName}}/features/{{featureSnake}}/domain/repositories/i_{{featureSnake}}_repository.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/domain/usecases/get_{{featureSnake}}_usecase.dart';
+
+@GenerateMocks([I{{Feature}}Repository])
+import 'get_{{featureSnake}}_usecase_test.mocks.dart';
+
+void main() {
+  late Get{{Feature}}UseCase useCase;
+  late MockI{{Feature}}Repository mockRepository;
+
+  setUp(() {
+    mockRepository = MockI{{Feature}}Repository();
+    useCase = Get{{Feature}}UseCase(
+      TalkerLoggerAdapter(Talker()),
+      repository: mockRepository,
+    );
+  });
+
+  group('Get{{Feature}}UseCase', () {
+    test('calls repository.getAll and returns result', () async {
+      when(mockRepository.getAll()).thenAnswer((_) async => const []);
+
+      final result = await useCase(const NoParams());
+
+      expect(result, isA<Result<dynamic>>());
+      verify(mockRepository.getAll()).called(1);
+    });
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Repository test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplRepositoryTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+
+import 'package:{{packageName}}/features/{{featureSnake}}/data/datasources/i_remote_{{featureSnake}}_data_source.dart';
+import 'package:{{packageName}}/features/{{featureSnake}}/data/repositories/{{featureSnake}}_repository.dart';
+
+@GenerateMocks([IRemote{{Feature}}DataSource])
+import '{{featureSnake}}_repository_test.mocks.dart';
+
+void main() {
+  late {{Feature}}Repository repository;
+  late MockIRemote{{Feature}}DataSource mockDataSource;
+
+  setUp(() {
+    mockDataSource = MockIRemote{{Feature}}DataSource();
+    repository = {{Feature}}Repository(remoteDatasource: mockDataSource);
+  });
+
+  group('{{Feature}}Repository', () {
+    test('getAll calls datasource and returns data', () async {
+      when(mockDataSource.getAll()).thenAnswer((_) async => const []);
+
+      final result = await repository.getAll();
+
+      expect(result, isA<List<dynamic>>());
+      verify(mockDataSource.getAll()).called(1);
+    });
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Datasource test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplDatasourceTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('{{Feature}}DataSource', () {
+    test('can be instantiated', () {
+      // TODO(nexo): add datasource tests.
+      expect(true, isTrue);
     });
   });
 }

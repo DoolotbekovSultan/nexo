@@ -42,6 +42,14 @@ This creates `lib/features/auth/` with Cubit, datasource, repository, use case, 
 - **Mock datasources:** `--mock` (default: on)
 - **List vs single:** `--list true/false`
 - **Custom output directory:** `--root` (default: `lib/features`)
+- **Stream use cases:** `--stream` (generates `NexoStreamUseCase` + `watchAll()`)
+- **Stream only:** `--stream-only` (pure stream, no `getAll()`)
+- **Pagination:** `--pagination` (generates `PaginationController`)
+- **Optimistic updates:** `--optimistic` (generates cubit with `performOptimistic`)
+- **Validators:** `--validators` (generates `NexoValidators` in params)
+- **Get by ID:** `--get-by-id` (generates `GetByIdUseCase`)
+- **Local storage:** `--local-storage <type>` (hive/shared-prefs/secure-storage)
+- **Freezed fix:** `nexo fix` (patches freezed 3.x codegen bugs)
 
 ---
 
@@ -71,6 +79,36 @@ nexo_cli feature order --bloc --freezed --json '{"id": "String"}' --get --create
 
 # Custom output directory
 nexo_cli feature faq --get --root lib/presentation
+
+# Stream use case for real-time data
+nexo_cli feature messages --stream --injectable --freezed
+
+# Stream only (no getAll)
+nexo_cli feature notifications --stream-only --injectable
+
+# Pagination with stream
+nexo_cli feature events --pagination --stream --injectable --freezed
+
+# Optimistic updates
+nexo_cli feature cart --get --create --update --delete --optimistic --injectable
+
+# Form validation
+nexo_cli feature auth --create --validators --injectable
+
+# Local storage with Hive
+nexo_cli feature cache --get --local-storage hive --injectable
+
+# Local storage with SharedPreferences
+nexo_cli feature settings --get --local-storage shared-prefs --injectable
+
+# Local storage with SecureStorage
+nexo_cli feature tokens --get --local-storage secure-storage --injectable
+
+# Get by ID
+nexo_cli feature user --get --get-by-id --injectable
+
+# Fix freezed codegen issues
+nexo_cli fix
 ```
 
 ---
@@ -82,6 +120,7 @@ nexo_cli feature faq --get --root lib/presentation
 | `--bloc` | off | Generate Bloc with events/states |
 | `--cubit` | on* | Generate Cubit with state |
 | `--list-cubit` | off | Generate NexoListCubit |
+| `--async-cubit` | off | Generate NexoAsyncCubit with fetch() |
 | `--presentation-only` | off | Only presentation layer |
 | `--freezed` / `--no-freezed` | on | Use @freezed |
 | `--injectable` / `--no-injectable` | on | Use @injectable |
@@ -91,9 +130,16 @@ nexo_cli feature faq --get --root lib/presentation
 | `--create` | off | Generate CREATE use case + request DTO |
 | `--update` | off | Generate UPDATE use case + request DTO |
 | `--delete` | off | Generate DELETE use case |
+| `--get-by-id` | off | Generate GetByIdUseCase |
 | `--json '{...}'` | - | Generate model from JSON fields |
 | `--list true/false` | true | List vs single object |
 | `--local` | off | Include local datasource |
+| `--local-storage <type>` | - | Storage backend: hive, shared-prefs, secure-storage |
+| `--stream` | off | Generate NexoStreamUseCase + watchAll() |
+| `--stream-only` | off | Pure stream (no getAll) |
+| `--pagination` | off | Generate PaginationController |
+| `--optimistic` | off | Generate cubit with performOptimistic |
+| `--validators` | off | Generate NexoValidators in params |
 | `--preferences` | off | Generate preferences wrapper |
 | `--extensions` | off | Generate entity extensions |
 | `--ui` | off | Generate pages/ and widgets/ |

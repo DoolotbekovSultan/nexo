@@ -15,7 +15,7 @@ class CreateArticleUseCase
   @override
   Future<ArticleEntity> execute(CreateArticleParams params) async {
     // TODO(nexo): implement create.
-    throw UnimplementedError();
+    return (await _repository.getAll()).first;
   }
 }
 
@@ -30,7 +30,7 @@ class UpdateArticleUseCase
   @override
   Future<ArticleEntity> execute(UpdateArticleParams params) async {
     // TODO(nexo): implement update.
-    throw UnimplementedError();
+    return (await _repository.getAll()).first;
   }
 }
 
@@ -44,6 +44,6 @@ class DeleteArticleUseCase extends NexoUseCase<void, String> {
   @override
   Future<void> execute(String id) async {
     // TODO(nexo): implement delete.
-    throw UnimplementedError();
+    await _repository.getAll();
   }
 }

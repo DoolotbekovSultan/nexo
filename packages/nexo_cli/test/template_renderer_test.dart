@@ -420,7 +420,7 @@ void main() {
         defaultOptions,
       );
       expect(out, contains('class AuthScreen'));
-      expect(out, contains('StatefulWidget'));
+      expect(out, contains('StatelessWidget'));
     });
   });
 

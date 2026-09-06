@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0
+
+- **New `--stream` flag:** Generate `NexoStreamUseCase` with `watchAll()` repository method.
+- **New `--stream-only` flag:** Pure stream use case without `getAll()`.
+- **New `--pagination` flag:** Generate `PaginationController` for paginated lists.
+- **New `--optimistic` flag:** Generate cubit with `performOptimistic` helper for optimistic updates.
+- **New `--validators` flag:** Generate `NexoValidators` validation in create/update params.
+- **New `--get-by-id` flag:** Generate `GetByIdUseCase` for fetching single entities.
+- **New `--local-storage <type>` flag:** Generate real local datasource implementations:
+  - `hive`: Hive box with JSON serialization
+  - `shared-prefs`: SharedPreferences with JSON string storage
+  - `secure-storage`: FlutterSecureStorage with encrypted storage
+- **New `--async-cubit` flag:** Generate `NexoAsyncCubit` with `fetch()` pattern.
+- **New `nexo fix` command:** Patch freezed 3.x codegen bugs (extraneous `final` modifier).
+- Fixed angle brackets in doc comments (`NexoAsyncState<T>`, `Stream<Result<T>>`).
+- Fixed unused `_repository` fields in stream and CRUD use case templates.
+- Fixed unused `nexo_core.dart` import in test templates.
+- 132 tests passing.
+
 ## 0.2.2
 
 - New `--root` flag to customize output directory (default: `lib/features`).

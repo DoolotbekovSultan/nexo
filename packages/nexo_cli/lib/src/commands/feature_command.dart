@@ -23,13 +23,19 @@ class FeatureCommand extends Command<int> {
         'cubit',
         defaultsTo: false,
         negatable: true,
-        help: 'Generate Cubit (presentation/cubit/).',
+        help: 'Generate Cubit with executeEither (presentation/cubit/).',
+      )
+      ..addFlag(
+        'async-cubit',
+        defaultsTo: false,
+        negatable: true,
+        help: 'Generate NexoAsyncCubit with fetch() (no state file needed).',
       )
       ..addFlag(
         'list-cubit',
         defaultsTo: false,
         negatable: true,
-        help: 'Generate NexoListCubit for simple list loading.',
+        help: 'Generate list cubit with executeEither (presentation/cubit/).',
       )
       ..addFlag(
         'presentation-only',
@@ -69,6 +75,11 @@ class FeatureCommand extends Command<int> {
         negatable: false,
         help: 'Include local datasource in the scaffold.',
       )
+      ..addOption(
+        'local-storage',
+        allowed: ['hive', 'shared-prefs', 'secure-storage'],
+        help: 'Local storage backend (hive/shared-prefs/secure-storage).',
+      )
       ..addFlag(
         'preferences',
         defaultsTo: false,
@@ -93,7 +104,13 @@ class FeatureCommand extends Command<int> {
         'get',
         defaultsTo: false,
         negatable: false,
-        help: 'Generate get use case and repository method.',
+        help: 'Generate get all use case and repository method.',
+      )
+      ..addFlag(
+        'get-by-id',
+        defaultsTo: false,
+        negatable: false,
+        help: 'Generate get by id use case and repository method.',
       )
       ..addFlag(
         'create',
@@ -112,6 +129,37 @@ class FeatureCommand extends Command<int> {
         defaultsTo: false,
         negatable: false,
         help: 'Generate delete use case.',
+      )
+      // ── Nexo features ──
+      ..addFlag(
+        'pagination',
+        defaultsTo: false,
+        negatable: false,
+        help: 'Generate paginated list with PaginationController.',
+      )
+      ..addFlag(
+        'stream',
+        defaultsTo: false,
+        negatable: false,
+        help: 'Generate NexoStreamUseCase for real-time features.',
+      )
+      ..addFlag(
+        'stream-only',
+        defaultsTo: false,
+        negatable: false,
+        help: 'Generate only stream use case (no getAll). Implies --stream.',
+      )
+      ..addFlag(
+        'optimistic',
+        defaultsTo: false,
+        negatable: false,
+        help: 'Generate OptimisticUpdateHelper in write use cases.',
+      )
+      ..addFlag(
+        'validators',
+        defaultsTo: false,
+        negatable: false,
+        help: 'Generate NexoValidators in create/update params.',
       )
       ..addOption(
         'json',
@@ -179,12 +227,20 @@ class FeatureCommand extends Command<int> {
     // Parse presentation style.
     final bloc = argResults!['bloc'] as bool;
     final cubit = argResults!['cubit'] as bool;
+    final asyncCubit = argResults!['async-cubit'] as bool;
     final listCubit = argResults!['list-cubit'] as bool;
     final presentationOnly = argResults!['presentation-only'] as bool;
 
-    final styleCount = [bloc, cubit, listCubit].where((e) => e).length;
+    final styleCount = [
+      bloc,
+      cubit,
+      asyncCubit,
+      listCubit,
+    ].where((e) => e).length;
     if (styleCount > 1) {
-      stderr.writeln('Choose only one of --bloc, --cubit, or --list-cubit.');
+      stderr.writeln(
+        'Choose only one of --bloc, --cubit, --async-cubit, or --list-cubit.',
+      );
       stderr.writeln();
       stderr.writeln(usage);
       return 64;
@@ -194,6 +250,8 @@ class FeatureCommand extends Command<int> {
     final effectiveCubit = !presentationOnly && styleCount == 0;
     final style = bloc
         ? PresentationStyle.bloc
+        : asyncCubit
+        ? PresentationStyle.asyncCubit
         : listCubit
         ? PresentationStyle.listCubit
         : effectiveCubit
@@ -250,6 +308,16 @@ class FeatureCommand extends Command<int> {
     // Parse list/single.
     final isList = argResults!['list'] == 'true';
 
+    // Parse local storage backend.
+    final localStorageStr = argResults!['local-storage'] as String?;
+    final localStorage = localStorageStr == 'hive'
+        ? LocalStorageBackend.hive
+        : localStorageStr == 'shared-prefs'
+        ? LocalStorageBackend.sharedPrefs
+        : localStorageStr == 'secure-storage'
+        ? LocalStorageBackend.secureStorage
+        : null;
+
     final options = FeatureOptions(
       presentationOnly: presentationOnly,
       presentationStyle: style,
@@ -268,6 +336,14 @@ class FeatureCommand extends Command<int> {
       crudOperations: crudOps,
       isList: isList,
       root: argResults!['root'] as String,
+      pagination: argResults!['pagination'] as bool,
+      stream:
+          argResults!['stream'] as bool || argResults!['stream-only'] as bool,
+      streamOnly: argResults!['stream-only'] as bool,
+      optimistic: argResults!['optimistic'] as bool,
+      validators: argResults!['validators'] as bool,
+      localStorage: localStorage,
+      getById: argResults!['get-by-id'] as bool,
     );
 
     stdout.writeln('Planned feature: ${names.snakeCase}');
@@ -281,6 +357,9 @@ class FeatureCommand extends Command<int> {
     stdout.writeln('  mapper: ${options.mapper}');
     stdout.writeln('  mock: ${options.mock}');
     stdout.writeln('  local: ${options.local}');
+    if (options.localStorage != null) {
+      stdout.writeln('  local-storage: ${options.localStorage!.name}');
+    }
     stdout.writeln('  preferences: ${options.preferences}');
     stdout.writeln('  extensions: ${options.extensions}');
     stdout.writeln('  ui: ${options.ui}');
@@ -289,6 +368,12 @@ class FeatureCommand extends Command<int> {
     stdout.writeln('  overwrite: ${options.overwrite}');
     stdout.writeln('  crud: ${crudOps.isEmpty ? "none" : crudOps.join(", ")}');
     stdout.writeln('  list: ${options.isList}');
+    stdout.writeln('  pagination: ${options.pagination}');
+    stdout.writeln('  stream: ${options.stream}');
+    stdout.writeln('  stream-only: ${options.streamOnly}');
+    stdout.writeln('  optimistic: ${options.optimistic}');
+    stdout.writeln('  validators: ${options.validators}');
+    stdout.writeln('  get-by-id: ${options.getById}');
     if (jsonFields != null) {
       stdout.writeln('  json fields: ${jsonFields.length} fields');
     }
@@ -316,6 +401,21 @@ class FeatureCommand extends Command<int> {
     stdout.writeln();
 
     final projectRoot = Directory.current.path;
+
+    // Read package name from pubspec.yaml.
+    String? packageName;
+    final pubspecFile = File(p.join(projectRoot, 'pubspec.yaml'));
+    if (pubspecFile.existsSync()) {
+      final pubspecContent = pubspecFile.readAsStringSync();
+      final match = RegExp(
+        r'^name:\s*(.+)$',
+        multiLine: true,
+      ).firstMatch(pubspecContent);
+      if (match != null) {
+        packageName = match.group(1)!.trim();
+      }
+    }
+
     final libRoot = p.join(projectRoot, options.root, names.snakeCase);
     final testRoot = p.join(projectRoot, 'test', 'features', names.snakeCase);
     final absolutePaths = <String>[
@@ -355,7 +455,12 @@ class FeatureCommand extends Command<int> {
             : ctx.isWithin(testNorm, normalized)
             ? ctx.relative(normalized, from: testNorm).replaceAll(r'\', '/')
             : normalized.replaceAll(r'\', '/');
-        final body = TemplateRenderer.render(relative, names, options);
+        final body = TemplateRenderer.render(
+          relative,
+          names,
+          options,
+          packageName: packageName,
+        );
         await File(abs).writeAsString(body);
       }
     }
