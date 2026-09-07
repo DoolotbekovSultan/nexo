@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- Migrated to Dart 3.13+ patterns: switch expressions, collection if/for, null-aware elements.
+- Replaced `as bool` casts with `argResults!.flag()` API.
+- Added strict analysis_options.yaml with 150+ lint rules.
+- Fixed all lint warnings and formatting issues.
+
 ## 0.3.0
 
 - **New `--stream` flag:** Generate `NexoStreamUseCase` with `watchAll()` repository method.
