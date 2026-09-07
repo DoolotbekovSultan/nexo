@@ -18,7 +18,7 @@ class FixCommand extends Command<int> {
     await for (final entity in dir.list(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.freezed.dart')) continue;
 
-      var content = await entity.readAsString();
+      final content = await entity.readAsString();
       // freezed 3.x bug: "required final  List<T>" → "required  List<T>"
       final patchedContent = content.replaceAll(
         RegExp(r'required\s+final\s+(\s+)'),

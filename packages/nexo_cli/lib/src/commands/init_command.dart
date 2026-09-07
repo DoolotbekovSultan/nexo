@@ -28,31 +28,26 @@ class InitCommand extends Command<int> {
       ..addFlag(
         'mock',
         defaultsTo: true,
-        negatable: true,
         help: 'Use mock datasources by default (debug).',
       )
       ..addFlag(
         'prod',
-        defaultsTo: false,
         negatable: false,
         help: 'Use prod datasources by default (overrides --mock).',
       )
       ..addFlag(
         'sentry',
-        defaultsTo: false,
         negatable: false,
         help: 'Add Sentry crash reporting integration.',
       )
       ..addFlag(
         'dry-run',
         abbr: 'n',
-        defaultsTo: false,
         negatable: false,
         help: 'Print what would be created without writing files.',
       )
       ..addFlag(
         'overwrite',
-        defaultsTo: false,
         negatable: false,
         help: 'Overwrite existing files; otherwise skip them.',
       );
@@ -67,17 +62,17 @@ class InitCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    final appName = argResults!['name'] as String;
-    final routingStr = argResults!['routing'] as String;
-    final routing = routingStr == 'auto_route'
-        ? RoutingType.autoRoute
-        : routingStr == 'go_router'
-        ? RoutingType.goRouter
-        : RoutingType.none;
-    final mockByDefault = !(argResults!['prod'] as bool);
-    final sentry = argResults!['sentry'] as bool;
-    final dryRun = argResults!['dry-run'] as bool;
-    final overwrite = argResults!['overwrite'] as bool;
+    final appName = argResults!.option('name') ?? 'MyApp';
+    final routingStr = argResults!.option('routing') ?? 'none';
+    final routing = switch (routingStr) {
+      'auto_route' => RoutingType.autoRoute,
+      'go_router' => RoutingType.goRouter,
+      _ => RoutingType.none,
+    };
+    final mockByDefault = !argResults!.flag('prod');
+    final sentry = argResults!.flag('sentry');
+    final dryRun = argResults!.flag('dry-run');
+    final overwrite = argResults!.flag('overwrite');
 
     final options = InitOptions(
       appName: appName,
@@ -236,10 +231,6 @@ class InitCommand extends Command<int> {
   }
 
   /// Adds missing packages to a YAML section (e.g. `dependencies:`).
-  ///
-  /// Simple heuristic: finds the section header, then checks if each package
-  /// already exists as a key. If not, appends it before the next section or
-  /// end of file.
   String _addDependencies(
     String content,
     String sectionHeader,
@@ -274,8 +265,9 @@ class InitCommand extends Command<int> {
 
     if (insertIndex == -1) {
       // Section not found — append at end.
-      result.add('');
-      result.add(sectionHeader);
+      result
+        ..add('')
+        ..add(sectionHeader);
       for (final entry in packages.entries) {
         result.add('  ${entry.key}: ${entry.value}');
       }

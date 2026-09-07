@@ -19,7 +19,6 @@ void main() {
     dryRun: false,
     overwrite: false,
     crudOperations: {'get'},
-    isList: true,
   );
 
   group('entity templates', () {

@@ -4,14 +4,4 @@ dartdoc:
       markdown: doc/INTERNAL.md
       name: Internal
   showUndocumentedCategories: true
-  linkToSource:
-    root: .
   escapeRawTemplates: false
-  excludeUnusedPublicClasses: true
-  excludeUnusedPublicConstructors: true
-  excludeUnusedPublicEnums: true
-  excludeUnusedPublicExtensionMethods: true
-  excludeUnusedPublicFunctions: true
-  excludeUnusedPublicMembers: true
-  excludeUnusedPublicProperties: true
-  excludeUnusedPublicTypedefs: true

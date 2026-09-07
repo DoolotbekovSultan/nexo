@@ -84,7 +84,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -122,7 +121,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -152,7 +150,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -180,7 +177,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get', 'create', 'update', 'delete'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -213,8 +209,6 @@ void main() {
         tests: false,
         dryRun: false,
         overwrite: false,
-        crudOperations: {},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -243,8 +237,6 @@ void main() {
         tests: false,
         dryRun: false,
         overwrite: false,
-        crudOperations: {},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -273,7 +265,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(paths, contains('domain/entities/auth_extensions.dart'));
@@ -295,7 +286,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(
@@ -349,7 +339,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'create', 'update'},
-        isList: true,
       );
       final paths = FeaturePlan.plannedLibPaths(names, o);
       expect(paths, isNot(contains('domain/usecases/get_auth_usecase.dart')));
@@ -378,7 +367,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       expect(FeaturePlan.plannedTestPaths(names, o), isEmpty);
     });
@@ -399,7 +387,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       expect(
         FeaturePlan.plannedTestPaths(names, o),
@@ -427,7 +414,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       expect(
         FeaturePlan.plannedTestPaths(names, o),
@@ -451,7 +437,6 @@ void main() {
         dryRun: false,
         overwrite: false,
         crudOperations: {'get'},
-        isList: true,
       );
       expect(
         FeaturePlan.plannedTestPaths(names, o),
@@ -474,8 +459,6 @@ void main() {
         tests: true,
         dryRun: false,
         overwrite: false,
-        crudOperations: {},
-        isList: true,
       );
       expect(FeaturePlan.plannedTestPaths(names, o), isEmpty);
     });

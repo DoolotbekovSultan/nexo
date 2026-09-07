@@ -13,33 +13,21 @@ class FeatureCommand extends Command<int> {
   FeatureCommand() {
     argParser
       // ── Presentation style ──
-      ..addFlag(
-        'bloc',
-        defaultsTo: false,
-        negatable: true,
-        help: 'Generate Bloc (presentation/bloc/).',
-      )
+      ..addFlag('bloc', help: 'Generate Bloc (presentation/bloc/).')
       ..addFlag(
         'cubit',
-        defaultsTo: false,
-        negatable: true,
         help: 'Generate Cubit with executeEither (presentation/cubit/).',
       )
       ..addFlag(
         'async-cubit',
-        defaultsTo: false,
-        negatable: true,
         help: 'Generate NexoAsyncCubit with fetch() (no state file needed).',
       )
       ..addFlag(
         'list-cubit',
-        defaultsTo: false,
-        negatable: true,
         help: 'Generate list cubit with executeEither (presentation/cubit/).',
       )
       ..addFlag(
         'presentation-only',
-        defaultsTo: false,
         negatable: false,
         help: 'Only presentation layer -- no data/ or domain/.',
       )
@@ -47,31 +35,26 @@ class FeatureCommand extends Command<int> {
       ..addFlag(
         'freezed',
         defaultsTo: true,
-        negatable: true,
         help: 'Use @freezed for entities, models, events, states.',
       )
       ..addFlag(
         'injectable',
         defaultsTo: true,
-        negatable: true,
         help: 'Use @injectable / @LazySingleton annotations.',
       )
       ..addFlag(
         'mapper',
         defaultsTo: true,
-        negatable: true,
         help: 'Generate data/mappers/ with extension toDomain().',
       )
       ..addFlag(
         'mock',
         defaultsTo: true,
-        negatable: true,
         help: 'Generate mock datasource alongside the real one.',
       )
       // ── Extra layers ──
       ..addFlag(
         'local',
-        defaultsTo: false,
         negatable: false,
         help: 'Include local datasource in the scaffold.',
       )
@@ -82,82 +65,65 @@ class FeatureCommand extends Command<int> {
       )
       ..addFlag(
         'preferences',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate <feature>_preferences.dart.',
       )
       ..addFlag(
         'extensions',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate <feature>_extensions.dart on entity.',
       )
       // ── UI ──
       ..addFlag(
         'ui',
-        defaultsTo: false,
         negatable: false,
         help: 'Include pages/ and widgets/ in the scaffold.',
       )
       // ── CRUD ──
       ..addFlag(
         'get',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate get all use case and repository method.',
       )
       ..addFlag(
         'get-by-id',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate get by id use case and repository method.',
       )
       ..addFlag(
         'create',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate create use case, request DTO, and params.',
       )
       ..addFlag(
         'update',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate update use case, request DTO, and params.',
       )
-      ..addFlag(
-        'delete',
-        defaultsTo: false,
-        negatable: false,
-        help: 'Generate delete use case.',
-      )
+      ..addFlag('delete', negatable: false, help: 'Generate delete use case.')
       // ── Nexo features ──
       ..addFlag(
         'pagination',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate paginated list with PaginationController.',
       )
       ..addFlag(
         'stream',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate NexoStreamUseCase for real-time features.',
       )
       ..addFlag(
         'stream-only',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate only stream use case (no getAll). Implies --stream.',
       )
       ..addFlag(
         'optimistic',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate OptimisticUpdateHelper in write use cases.',
       )
       ..addFlag(
         'validators',
-        defaultsTo: false,
         negatable: false,
         help: 'Generate NexoValidators in create/update params.',
       )
@@ -177,20 +143,17 @@ class FeatureCommand extends Command<int> {
       // ── Control ──
       ..addFlag(
         'tests',
-        defaultsTo: false,
         negatable: false,
         help: 'Include planned test files under test/features/<feature>/.',
       )
       ..addFlag(
         'dry-run',
         abbr: 'n',
-        defaultsTo: false,
         negatable: false,
         help: 'Print what would be created without writing files.',
       )
       ..addFlag(
         'overwrite',
-        defaultsTo: false,
         negatable: false,
         help: 'Overwrite existing files; otherwise skip them.',
       )
@@ -225,11 +188,11 @@ class FeatureCommand extends Command<int> {
     final names = NameUtils.fromFeatureInput(rawName);
 
     // Parse presentation style.
-    final bloc = argResults!['bloc'] as bool;
-    final cubit = argResults!['cubit'] as bool;
-    final asyncCubit = argResults!['async-cubit'] as bool;
-    final listCubit = argResults!['list-cubit'] as bool;
-    final presentationOnly = argResults!['presentation-only'] as bool;
+    final bloc = argResults!.flag('bloc');
+    final cubit = argResults!.flag('cubit');
+    final asyncCubit = argResults!.flag('async-cubit');
+    final listCubit = argResults!.flag('list-cubit');
+    final presentationOnly = argResults!.flag('presentation-only');
 
     final styleCount = [
       bloc,
@@ -248,15 +211,13 @@ class FeatureCommand extends Command<int> {
 
     // Default to cubit if no style chosen and not presentation-only.
     final effectiveCubit = !presentationOnly && styleCount == 0;
-    final style = bloc
-        ? PresentationStyle.bloc
-        : asyncCubit
-        ? PresentationStyle.asyncCubit
-        : listCubit
-        ? PresentationStyle.listCubit
-        : effectiveCubit
-        ? PresentationStyle.cubit
-        : PresentationStyle.none;
+    final style = switch ((bloc, asyncCubit, listCubit, effectiveCubit)) {
+      (true, _, _, _) => PresentationStyle.bloc,
+      (_, true, _, _) => PresentationStyle.asyncCubit,
+      (_, _, true, _) => PresentationStyle.listCubit,
+      (_, _, _, true) => PresentationStyle.cubit,
+      _ => PresentationStyle.none,
+    };
 
     final validation = FeaturePlan.validatePresentation(
       style: style,
@@ -270,36 +231,28 @@ class FeatureCommand extends Command<int> {
     }
 
     // Parse CRUD flags.
-    final crudOps = <String>{};
-    if (argResults!['get'] as bool) crudOps.add('get');
-    if (argResults!['create'] as bool) crudOps.add('create');
-    if (argResults!['update'] as bool) crudOps.add('update');
-    if (argResults!['delete'] as bool) crudOps.add('delete');
+    final crudOps = {
+      if (argResults!.flag('get')) 'get',
+      if (argResults!.flag('create')) 'create',
+      if (argResults!.flag('update')) 'update',
+      if (argResults!.flag('delete')) 'delete',
+    };
 
     // Parse JSON fields.
     Map<String, String>? jsonFields;
     final jsonArg = argResults!['json'] as String?;
     if (jsonArg != null && jsonArg.isNotEmpty) {
       try {
-        String jsonString;
-        if (jsonArg.startsWith('@')) {
-          // File reference: @file.json
-          final filePath = jsonArg.substring(1);
-          final file = File(filePath);
-          if (!file.existsSync()) {
-            stderr.writeln('JSON file not found: $filePath');
-            return 64;
-          }
-          jsonString = file.readAsStringSync();
-        } else {
-          jsonString = jsonArg;
-        }
+        final jsonString = jsonArg.startsWith('@')
+            ? File(jsonArg.substring(1)).readAsStringSync()
+            : jsonArg;
         jsonFields = parseJsonToFields(jsonString);
-      } catch (e) {
+      } on FormatException catch (e) {
         stderr.writeln('Invalid JSON: $e');
         stderr.writeln();
         stderr.writeln(
-          'Usage: --json \'{"id": "String", "title": "String"}\' or --json @file.json',
+          'Usage: --json \'{"id": "String", "title": "String"}\' '
+          'or --json @file.json',
         );
         return 64;
       }
@@ -310,40 +263,38 @@ class FeatureCommand extends Command<int> {
 
     // Parse local storage backend.
     final localStorageStr = argResults!['local-storage'] as String?;
-    final localStorage = localStorageStr == 'hive'
-        ? LocalStorageBackend.hive
-        : localStorageStr == 'shared-prefs'
-        ? LocalStorageBackend.sharedPrefs
-        : localStorageStr == 'secure-storage'
-        ? LocalStorageBackend.secureStorage
-        : null;
+    final localStorage = switch (localStorageStr) {
+      'hive' => LocalStorageBackend.hive,
+      'shared-prefs' => LocalStorageBackend.sharedPrefs,
+      'secure-storage' => LocalStorageBackend.secureStorage,
+      _ => null,
+    };
 
     final options = FeatureOptions(
       presentationOnly: presentationOnly,
       presentationStyle: style,
-      freezed: argResults!['freezed'] as bool,
-      injectable: argResults!['injectable'] as bool,
-      mapper: argResults!['mapper'] as bool,
-      mock: argResults!['mock'] as bool,
-      local: argResults!['local'] as bool,
-      preferences: argResults!['preferences'] as bool,
-      ui: argResults!['ui'] as bool,
-      extensions: argResults!['extensions'] as bool,
-      tests: argResults!['tests'] as bool,
-      dryRun: argResults!['dry-run'] as bool,
-      overwrite: argResults!['overwrite'] as bool,
+      freezed: argResults!.flag('freezed'),
+      injectable: argResults!.flag('injectable'),
+      mapper: argResults!.flag('mapper'),
+      mock: argResults!.flag('mock'),
+      local: argResults!.flag('local'),
+      preferences: argResults!.flag('preferences'),
+      ui: argResults!.flag('ui'),
+      extensions: argResults!.flag('extensions'),
+      tests: argResults!.flag('tests'),
+      dryRun: argResults!.flag('dry-run'),
+      overwrite: argResults!.flag('overwrite'),
       jsonFields: jsonFields,
       crudOperations: crudOps,
       isList: isList,
-      root: argResults!['root'] as String,
-      pagination: argResults!['pagination'] as bool,
-      stream:
-          argResults!['stream'] as bool || argResults!['stream-only'] as bool,
-      streamOnly: argResults!['stream-only'] as bool,
-      optimistic: argResults!['optimistic'] as bool,
-      validators: argResults!['validators'] as bool,
+      root: argResults!.option('root') ?? 'lib/features',
+      pagination: argResults!.flag('pagination'),
+      stream: argResults!.flag('stream') || argResults!.flag('stream-only'),
+      streamOnly: argResults!.flag('stream-only'),
+      optimistic: argResults!.flag('optimistic'),
+      validators: argResults!.flag('validators'),
       localStorage: localStorage,
-      getById: argResults!['get-by-id'] as bool,
+      getById: argResults!.flag('get-by-id'),
     );
 
     stdout.writeln('Planned feature: ${names.snakeCase}');

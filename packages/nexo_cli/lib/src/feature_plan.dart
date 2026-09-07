@@ -311,7 +311,7 @@ abstract final class FeaturePlan {
     // ── data/ ──
     if (options.injectable) {
       lines.add('data/datasources/i_remote_${s}_data_source.dart');
-      if (options.mock || options.local) {
+      if (options.local) {
         lines.add('data/datasources/i_local_${s}_data_source.dart');
       }
     }

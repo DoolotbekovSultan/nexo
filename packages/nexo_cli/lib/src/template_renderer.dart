@@ -166,8 +166,9 @@ abstract final class TemplateRenderer {
     if (norm.contains('data/repositories/') &&
         norm.endsWith('_repository.dart')) {
       if (options.streamOnly) {
-        if (!options.injectable)
+        if (!options.injectable) {
           return _tplRepositoryImplStreamOnlyNoInjectable;
+        }
         return _tplRepositoryImplStreamOnly;
       }
       if (options.stream) {
@@ -293,7 +294,7 @@ abstract final class TemplateRenderer {
     final mapperCall = options.mapper ? '.toDomain()' : '';
     final noMapperBody = options.mapper
         ? '    return models.toDomain();'
-        : "    // TODO(nexo): implement mapping from {{Feature}}Model to {{Feature}}Entity.\n    return const [];";
+        : '    // TODO(nexo): implement mapping from {{Feature}}Model to {{Feature}}Entity.\n    return const [];';
 
     // First: substitute generated content blocks.
     var result = template
