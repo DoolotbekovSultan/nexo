@@ -36,7 +36,6 @@ final class FeatureOptions {
     this.validators = false,
     this.localStorage,
     this.getById = false,
-    this.adminCrud = false,
     this.usecaseGen = false,
     this.paginated = false,
   });
@@ -117,9 +116,6 @@ final class FeatureOptions {
   /// Generate get_by_id use case.
   final bool getById;
 
-  /// Generate NexoAdminCrudBloc with generic CRUD operations.
-  final bool adminCrud;
-
   /// Generate @NexoUseCase abstract class instead of manual UseCase.
   final bool usecaseGen;
 
@@ -152,7 +148,6 @@ final class FeatureOptions {
     bool? validators,
     LocalStorageBackend? localStorage,
     bool? getById,
-    bool? adminCrud,
     bool? usecaseGen,
     bool? paginated,
   }) {
@@ -182,7 +177,6 @@ final class FeatureOptions {
       validators: validators ?? this.validators,
       localStorage: localStorage ?? this.localStorage,
       getById: getById ?? this.getById,
-      adminCrud: adminCrud ?? this.adminCrud,
       usecaseGen: usecaseGen ?? this.usecaseGen,
       paginated: paginated ?? this.paginated,
     );
@@ -211,9 +205,6 @@ final class FeatureOptions {
 
   /// Whether there are multiple datasource implementations (mock or local).
   bool get hasMultipleDatasources => mock || local;
-
-  /// Whether to use NexoAdminCrudBloc for admin features.
-  bool get hasAdminCrud => adminCrud;
 
   /// Whether to use @NexoUseCase annotation for use cases.
   bool get hasUsecaseGen => usecaseGen;
@@ -411,12 +402,7 @@ abstract final class FeaturePlan {
         options.hasAsyncCubit ||
         options.crudOperations.isEmpty;
     if (hasPresentation) {
-      if (options.hasAdminCrud) {
-        // Admin CRUD uses NexoAdminCrudBloc with generic state
-        lines
-          ..add('presentation/bloc/${s}_bloc.dart')
-          ..add('presentation/bloc/${s}_state.dart');
-      } else if (options.hasBloc) {
+      if (options.hasBloc) {
         lines
           ..add('presentation/bloc/${s}_bloc.dart')
           ..add('presentation/bloc/${s}_event.dart')
@@ -506,9 +492,6 @@ abstract final class FeaturePlan {
       if (options.hasDelete) 'Delete${p}UseCase',
     ];
     if (options.hasBloc) parts.addAll(['${p}Bloc', '${p}Event', '${p}State']);
-    if (options.hasAdminCrud) {
-      parts.addAll(['Admin${p}Bloc', '${p}CrudState']);
-    }
     if (options.hasCubit) parts.addAll(['${p}Cubit', '${p}State']);
     if (options.hasListCubit) parts.add('${p}Cubit');
     if (options.preferences) parts.add('${p}Preferences');

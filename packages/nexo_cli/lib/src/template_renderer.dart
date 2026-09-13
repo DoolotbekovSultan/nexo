@@ -24,7 +24,6 @@ abstract final class TemplateRenderer {
     if (norm.endsWith('_test.dart')) {
       if (norm.contains('mapper')) return _tplMapperTest;
       if (norm.contains('cubit') || norm.contains('bloc')) {
-        if (options.hasAdminCrud) return _tplAdminCrudBlocTest;
         if (options.hasPaginated) return _tplPaginatedBlocTest;
         return options.hasBloc ? _tplBlocTest : _tplCubitTest;
       }
@@ -237,7 +236,6 @@ abstract final class TemplateRenderer {
       return _tplBlocEvent;
     }
     if (norm.contains('presentation/bloc/') && norm.endsWith('_bloc.dart')) {
-      if (options.hasAdminCrud) return _tplAdminCrudBloc;
       if (options.hasPaginated) return _tplPaginatedBloc;
       return _tplBloc;
     }
@@ -257,7 +255,6 @@ abstract final class TemplateRenderer {
     if (norm.endsWith('_state.dart') &&
         (norm.contains('presentation/bloc/') ||
             norm.contains('presentation/cubit/'))) {
-      if (options.hasAdminCrud) return _tplAdminCrudState;
       if (options.freezed) return _tplStateFreezed;
       return _tplState;
     }
@@ -2487,80 +2484,6 @@ void main() {
     test('can be instantiated', () {
       // TODO(nexo): add datasource tests.
       expect(true, isTrue);
-    });
-  });
-}
-''';
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Admin CRUD Bloc
-// ──────────────────────────────────────────────────────────────────────────────
-
-const _tplAdminCrudBloc = r'''
-import 'package:nexo/nexo_core.dart';
-import 'package:injectable/injectable.dart';
-
-import '../../data/repositories/{{featureSnake}}_repository.dart';
-
-@injectable
-class Admin{{Feature}}Bloc extends NexoAdminCrudBloc<{{Feature}}Dto, String> {
-  Admin{{Feature}}Bloc({
-    required {{Feature}}Repository repository,
-    required String token,
-  }) : super(repository: repository, token: token, path: '{{featureSnake}}');
-
-  @override
-  String buildSuccessFeedback(String message) => message;
-
-  @override
-  String buildErrorFeedback(String message) => message;
-}
-''';
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Admin CRUD State
-// ──────────────────────────────────────────────────────────────────────────────
-
-const _tplAdminCrudState = r'''
-/// Состояние CRUD-операций для {{Feature}}.
-///
-/// Использует [NexoCrudState] с типом [{{Feature}}Dto] и [String] feedback.
-typedef {{Feature}}CrudState = NexoCrudState<{{Feature}}Dto, String>;
-''';
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Admin CRUD Bloc Test
-// ──────────────────────────────────────────────────────────────────────────────
-
-const _tplAdminCrudBlocTest = r'''
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:nexo/nexo_core.dart';
-
-import '{{featureSnake}}_bloc.dart';
-
-class Mock{{Feature}}Repository extends Mock
-    implements {{Feature}}Repository {}
-
-void main() {
-  late Admin{{Feature}}Bloc bloc;
-  late Mock{{Feature}}Repository mockRepository;
-
-  setUp(() {
-    mockRepository = Mock{{Feature}}Repository();
-    bloc = Admin{{Feature}}Bloc(
-      repository: mockRepository,
-      token: 'test-token',
-    );
-  });
-
-  tearDown(() {
-    bloc.close();
-  });
-
-  group('Admin{{Feature}}Bloc', () {
-    test('initial state is loading', () {
-      expect(bloc.state, isA<NexoCrudLoading>());
     });
   });
 }
