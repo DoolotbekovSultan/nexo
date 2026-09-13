@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.0.8-beta.0
+
+### nexo_core — BLoC/Cubit адаптация под Result<T>
+
+- **`executeMutation<T>()`** — теперь принимает `Future<Result<T>>` вместо throw:
+  ```dart
+  await executeMutation(
+    emit: emit,
+    action: () => _repository.create(_token, payload),  // Result<Film>
+    onSuccess: (film) { ... },
+    onError: (f) { ... },
+  );
+  ```
+
+- **`loadData<T>()`** — теперь принимает `Future<Result<T>>`:
+  ```dart
+  await loadData<User>(
+    emit: emit,
+    action: () => _getUserUseCase(id),  // Result<User>
+    toState: (data) => State.ready(data: data),
+    toError: (f) => State.error(failure: f),
+  );
+  ```
+
+- **`NexoCrudState<T, F>`** — generic feedback вместо `String?`:
+  ```dart
+  typedef FilmCrudState = NexoCrudState<FilmDto, AdminFeedback>;
+  ```
+
+- **`NexoAdminCrudBloc<T, F>`** — наследует `NexoBloc`, generic feedback:
+  ```dart
+  class AdminFilmsBloc extends NexoAdminCrudBloc<FilmDto, AdminFeedback> {
+    @override
+    AdminFeedback buildSuccessFeedback(String msg) => AdminFeedback.success(msg);
+    @override
+    AdminFeedback buildErrorFeedback(String msg) => AdminFeedback.error(msg);
+  }
+  ```
+
+- **`NexoPaginatedMixin`** — убрано ограничение `on Bloc<Object, Object>`, работает с любым `NexoBloc<Event, State>`.
+
+### Codegen
+
+- Настроен `build_runner` для `@NexoUseCaseAnnotation`.
+- Добавлена dev-зависимость `source_gen: ^4.2.4`.
+
 ## 0.0.7-beta.0
 
 ### nexo_core — BLoC/Cubit улучшения

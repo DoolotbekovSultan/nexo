@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:nexo/packages/nexo_errors/failure.dart';
+import 'package:nexo/packages/nexo_errors/result.dart';
 
-import 'failure_support.dart';
 import 'nexo_bloc.dart';
 import 'nexo_crud_state.dart';
 
@@ -23,79 +22,68 @@ import 'nexo_crud_state.dart';
 ///   final IRemoteFilmDataSource _ds;
 ///
 ///   @override
-///   Future<List<FilmDto>> list(String token, {String? q, int limit = 100}) {
+///   Future<Result<List<FilmDto>>> list(String token, {String? q, int limit = 100}) {
 ///     return _ds.listFilms(token, q: q, limit: limit);
 ///   }
 ///
 ///   @override
-///   Future<FilmDto> create(String token, Map<String, dynamic> body) {
+///   Future<Result<FilmDto>> create(String token, Map<String, dynamic> body) {
 ///     return _ds.createFilm(token, body);
 ///   }
 ///
 ///   @override
-///   Future<void> delete(String token, int id) {
+///   Future<Result<void>> delete(String token, int id) {
 ///     return _ds.deleteFilm(token, id);
 ///   }
 /// }
 /// ```
 abstract interface class NexoAdminRepository<T> {
   /// Загружает список сущностей.
-  ///
-  /// [token] — токен аутентификации.
-  /// [q] — поисковый запрос (опционально).
-  /// [limit] — максимальное количество элементов.
-  Future<List<T>> list(String token, {String? q, int limit = 100});
+  Future<Result<List<T>>> list(String token, {String? q, int limit = 100});
 
   /// Создаёт новую сущность.
-  ///
-  /// [token] — токен аутентификации.
-  /// [body] — данные новой сущности.
-  Future<T> create(String token, Map<String, dynamic> body);
+  Future<Result<T>> create(String token, Map<String, dynamic> body);
 
   /// Удаляет сущность по идентификатору.
-  ///
-  /// [token] — токен аутентификации.
-  /// [id] — идентификатор сущности.
-  Future<void> delete(String token, int id);
+  Future<Result<void>> delete(String token, int id);
 }
 
-/// Гeneric CRUD BLoC для админ-панелей.
+/// Generic CRUD BLoC для админ-панелей.
 ///
 /// Наследует [NexoBloc] и предоставляет готовую реализацию загрузки,
-/// поиска, создания и удаления сущностей. Пользователь определяет
-/// только тип сущности и конфигурирует BLoC через параметры конструктора.
+/// поиска, создания и удаления сущностей. Работает с кастомным feedback
+/// через generic параметр [F].
 ///
 /// ## Параметры
 ///
 /// - [T] — тип сущности (DTO).
+/// - [F] — тип feedback (например, ваш `AdminFeedback`).
 ///
 /// ## Пример использования
 ///
 /// ```dart
 /// @injectable
-/// class AdminFilmsBloc extends NexoAdminCrudBloc<AdminFilmDto> {
+/// class AdminFilmsBloc extends NexoAdminCrudBloc<FilmDto, AdminFeedback> {
 ///   AdminFilmsBloc({
-///     required AdminRepository repository,
+///     required FilmRepository repository,
 ///     required String token,
-///   }) : super(repository: repository, token: token, path: 'films');
+///   }) : super(
+///     repository: repository,
+///     token: token,
+///     path: 'films',
+///   );
 /// }
 /// ```
 ///
-/// ## Автоматические операции
-///
-/// - `on<LoadCrudData<T>>` — загрузка списка сущностей.
-/// - `on<SearchCrudData<T>>` — поиск по списку.
-/// - `on<CreateCrudEntity<T>>` — создание новой сущности.
-/// - `on<DeleteCrudEntity<T>>` — удаление сущности по идентификатору.
-///
 /// См. также: [NexoCrudState], [NexoAdminRepository], [NexoBloc].
-abstract class NexoAdminCrudBloc<T> extends NexoBloc<Object, NexoCrudState<T>> {
+abstract class NexoAdminCrudBloc<T, F>
+    extends NexoBloc<Object, NexoCrudState<T, F>> {
   /// Создаёт экземпляр [NexoAdminCrudBloc].
   ///
   /// [repository] — репозиторий для CRUD-операций.
   /// [token] — токен аутентификации.
   /// [path] — путь API (например, 'films', 'users').
-  /// [limit] — максимальное количество элементов при загрузке (по умолчанию 100).
+  /// [limit] — максимальное количество элементов при загрузке.
   NexoAdminCrudBloc({
     required this.repository,
     required this.token,
@@ -122,71 +110,81 @@ abstract class NexoAdminCrudBloc<T> extends NexoBloc<Object, NexoCrudState<T>> {
 
   String? _lastSearchQuery;
 
+  /// Создаёт feedback для успешной операции.
+  ///
+  /// Переопределите для своего типа feedback.
+  F buildSuccessFeedback(String message);
+
+  /// Создаёт feedback для ошибки.
+  ///
+  /// Переопределите для своего типа feedback.
+  F buildErrorFeedback(String message);
+
   Future<void> _onLoad(
     LoadCrudData<T> event,
-    Emitter<NexoCrudState<T>> emit,
+    Emitter<NexoCrudState<T, F>> emit,
   ) async {
     emit(const NexoCrudLoading());
-    try {
-      final items = await repository.list(
-        token,
-        q: _lastSearchQuery,
-        limit: limit,
-      );
-      emit(NexoCrudReady(items: items, search: _lastSearchQuery ?? ''));
-    } on Failure catch (f) {
-      emit(NexoCrudError(errorMessage: f.userMessage));
-    } catch (e, s) {
-      emit(NexoCrudError(errorMessage: toFailure(e, s).userMessage));
-    }
+    final result = await repository.list(
+      token,
+      q: _lastSearchQuery,
+      limit: limit,
+    );
+    result.fold(
+      onFailure: (f) => emit(NexoCrudError(errorMessage: f.userMessage)),
+      onSuccess: (items) =>
+          emit(NexoCrudReady(items: items, search: _lastSearchQuery ?? '')),
+    );
   }
 
   Future<void> _onSearch(
     SearchCrudData<T> event,
-    Emitter<NexoCrudState<T>> emit,
+    Emitter<NexoCrudState<T, F>> emit,
   ) async {
     _lastSearchQuery = event.query.isEmpty ? null : event.query;
     emit(const NexoCrudLoading());
-    try {
-      final items = await repository.list(
-        token,
-        q: _lastSearchQuery,
-        limit: limit,
-      );
-      emit(NexoCrudReady(items: items, search: event.query));
-    } on Failure catch (f) {
-      emit(NexoCrudError(errorMessage: f.userMessage));
-    } catch (e, s) {
-      emit(NexoCrudError(errorMessage: toFailure(e, s).userMessage));
-    }
+    final result = await repository.list(
+      token,
+      q: _lastSearchQuery,
+      limit: limit,
+    );
+    result.fold(
+      onFailure: (f) => emit(NexoCrudError(errorMessage: f.userMessage)),
+      onSuccess: (items) =>
+          emit(NexoCrudReady(items: items, search: event.query)),
+    );
   }
 
   Future<void> _onCreate(
     CreateCrudEntity<T> event,
-    Emitter<NexoCrudState<T>> emit,
+    Emitter<NexoCrudState<T, F>> emit,
   ) async {
     final currentState = state;
-    if (currentState is! NexoCrudReady<T>) return;
+    if (currentState is! NexoCrudReady<T, F>) return;
 
     await executeMutation(
       emit: emit,
       action: () => repository.create(token, event.body),
-      onSuccess: () async {
-        final items = await repository.list(
+      onSuccess: (_) async {
+        final result = await repository.list(
           token,
           q: _lastSearchQuery,
           limit: limit,
         );
-        emit(NexoCrudReady(items: items, search: _lastSearchQuery ?? ''));
+        result.fold(
+          onFailure: (f) => emit(NexoCrudError(errorMessage: f.userMessage)),
+          onSuccess: (items) => emit(
+            NexoCrudReady(
+              items: items,
+              search: _lastSearchQuery ?? '',
+              feedback: buildSuccessFeedback('Создано'),
+            ),
+          ),
+        );
       },
       onError: (f) {
         emit(
-          NexoCrudReady(
-            items: currentState.items,
-            search: currentState.search,
-            feedbackMessage: f.userMessage,
-            isFeedbackError: true,
-          ),
+          currentState.copyWith(feedback: buildErrorFeedback(f.userMessage)),
         );
       },
     );
@@ -194,30 +192,34 @@ abstract class NexoAdminCrudBloc<T> extends NexoBloc<Object, NexoCrudState<T>> {
 
   Future<void> _onDelete(
     DeleteCrudEntity<T> event,
-    Emitter<NexoCrudState<T>> emit,
+    Emitter<NexoCrudState<T, F>> emit,
   ) async {
     final currentState = state;
-    if (currentState is! NexoCrudReady<T>) return;
+    if (currentState is! NexoCrudReady<T, F>) return;
 
     await executeMutation(
       emit: emit,
       action: () => repository.delete(token, event.id),
-      onSuccess: () async {
-        final items = await repository.list(
+      onSuccess: (_) async {
+        final result = await repository.list(
           token,
           q: _lastSearchQuery,
           limit: limit,
         );
-        emit(NexoCrudReady(items: items, search: _lastSearchQuery ?? ''));
+        result.fold(
+          onFailure: (f) => emit(NexoCrudError(errorMessage: f.userMessage)),
+          onSuccess: (items) => emit(
+            NexoCrudReady(
+              items: items,
+              search: _lastSearchQuery ?? '',
+              feedback: buildSuccessFeedback('Удалено'),
+            ),
+          ),
+        );
       },
       onError: (f) {
         emit(
-          NexoCrudReady(
-            items: currentState.items,
-            search: currentState.search,
-            feedbackMessage: f.userMessage,
-            isFeedbackError: true,
-          ),
+          currentState.copyWith(feedback: buildErrorFeedback(f.userMessage)),
         );
       },
     );

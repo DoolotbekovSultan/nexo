@@ -1,39 +1,40 @@
 /// Состояние CRUD-операций (загрузка, готово, ошибка).
 ///
-/// Типизированное состояние [NexoCrudState] используется совместно с
-/// [NexoAdminCrudBloc] для единообразного представления состояний
-/// CRUD-операций в админ-интерфейсах.
+/// Типизированное состояние [NexoCrudState] используется с BLoC
+/// для единообразного представления состояний CRUD-операций.
+///
+/// ## Параметры
+///
+/// - [T] — тип элементов (DTO).
+/// - [F] — тип feedback (например, ваш кастомный `AdminFeedback`).
 ///
 /// ## Пример
 ///
 /// ```dart
-/// // Начальное состояние
-/// const state = NexoCrudState<List<FilmDto>>.loading();
+/// // С кастомным feedback:
+/// typedef FilmCrudState = NexoCrudState<FilmDto, AdminFeedback>;
 ///
-/// // Состояние с данными
+/// // Готовое состояние:
 /// final ready = NexoCrudState.ready(
 ///   items: films,
-///   search: '',
+///   feedback: AdminFeedback.success('Загружено'),
 /// );
-///
-/// // Состояние ошибки
-/// final error = NexoCrudState.error(errorMessage: 'Network error');
 /// ```
-sealed class NexoCrudState<T> {
+sealed class NexoCrudState<T, F> {
   const NexoCrudState();
 
   /// `true`, если состояние — загрузка.
-  bool get isLoading => this is NexoCrudLoading<T>;
+  bool get isLoading => this is NexoCrudLoading<T, F>;
 
   /// `true`, если состояние — готово (данные загружены).
-  bool get isReady => this is NexoCrudReady<T>;
+  bool get isReady => this is NexoCrudReady<T, F>;
 
   /// `true`, если состояние — ошибка.
-  bool get isError => this is NexoCrudError<T>;
+  bool get isError => this is NexoCrudError<T, F>;
 }
 
 /// Состояние загрузки данных.
-final class NexoCrudLoading<T> extends NexoCrudState<T> {
+final class NexoCrudLoading<T, F> extends NexoCrudState<T, F> {
   const NexoCrudLoading();
 }
 
@@ -42,15 +43,13 @@ final class NexoCrudLoading<T> extends NexoCrudState<T> {
 /// [items] — текущий список элементов.
 /// [search] — текущий поисковый запрос.
 /// [busy] — `true`, если выполняется мутация (создание/удаление).
-/// [feedbackMessage] — сообщение для пользователя (успех/ошибка).
-/// [isFeedbackError] — `true`, если feedbackMessage — сообщение об ошибке.
-final class NexoCrudReady<T> extends NexoCrudState<T> {
+/// [feedback] —eneric feedback (успех/ошибка).
+final class NexoCrudReady<T, F> extends NexoCrudState<T, F> {
   const NexoCrudReady({
     required this.items,
     this.search = '',
     this.busy = false,
-    this.feedbackMessage,
-    this.isFeedbackError = false,
+    this.feedback,
   });
 
   /// Текущий список элементов.
@@ -62,31 +61,22 @@ final class NexoCrudReady<T> extends NexoCrudState<T> {
   /// `true`, если выполняется мутация (создание/удаление).
   final bool busy;
 
-  /// Сообщение для пользователя (успех/ошибка).
-  final String? feedbackMessage;
-
-  /// `true`, если feedbackMessage — сообщение об ошибке.
-  final bool isFeedbackError;
+  /// Feedback (успех/ошибка) — generic тип.
+  final F? feedback;
 
   /// Создаёт копию с указанными изменениями.
-  NexoCrudReady<T> copyWith({
+  NexoCrudReady<T, F> copyWith({
     List<T>? items,
     String? search,
     bool? busy,
-    String? feedbackMessage,
-    bool? isFeedbackError,
+    F? feedback,
     bool clearFeedback = false,
   }) {
-    return NexoCrudReady<T>(
+    return NexoCrudReady<T, F>(
       items: items ?? this.items,
       search: search ?? this.search,
       busy: busy ?? this.busy,
-      feedbackMessage: clearFeedback
-          ? null
-          : (feedbackMessage ?? this.feedbackMessage),
-      isFeedbackError: clearFeedback
-          ? false
-          : (isFeedbackError ?? this.isFeedbackError),
+      feedback: clearFeedback ? null : (feedback ?? this.feedback),
     );
   }
 }
@@ -94,7 +84,7 @@ final class NexoCrudReady<T> extends NexoCrudState<T> {
 /// Состояние ошибки.
 ///
 /// [errorMessage] — описание ошибки для пользователя.
-final class NexoCrudError<T> extends NexoCrudState<T> {
+final class NexoCrudError<T, F> extends NexoCrudState<T, F> {
   const NexoCrudError({required this.errorMessage});
 
   /// Описание ошибки для пользователя.

@@ -13,40 +13,9 @@
 /// ## Пример использования
 ///
 /// ```dart
-/// // Без repository
 /// @NexoUseCaseAnnotation()
 /// abstract class GetUserUseCase {
 ///   Future<User> execute(GetUserParams params);
-/// }
-///
-/// // С repository
-/// @NexoUseCaseAnnotation(repo: IUserRepository)
-/// abstract class GetUserUseCase {
-///   Future<User> execute(GetUserParams params);
-/// }
-///
-/// // С дополнительными зависимостями
-/// @NexoUseCaseAnnotation(repo: IUserRepository, extraDeps: [ProductAnalytics])
-/// abstract class GetUserUseCase {
-///   Future<User> execute(GetUserParams params);
-/// }
-/// ```
-///
-/// ## Генерируемый код
-///
-/// ```dart
-/// @injectable
-/// class GetUserUseCaseImpl extends NexoUseCase<User, GetUserParams> {
-///   GetUserUseCaseImpl({
-///     required NexoLogger logger,
-///     required IUserRepository repository,
-///   }) : _repository = repository, super(logger);
-///
-///   final IUserRepository _repository;
-///
-///   @override
-///   Future<User> execute(GetUserParams params) =>
-///       _repository.getUser(params.userId);
 /// }
 /// ```
 class NexoUseCaseAnnotation {

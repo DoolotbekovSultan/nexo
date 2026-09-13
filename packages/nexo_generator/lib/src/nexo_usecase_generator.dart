@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
@@ -8,27 +10,6 @@ import 'nexo_usecase_annotation.dart';
 ///
 /// Находит abstract class с аннотацией [@NexoUseCaseAnnotation] и генерирует
 /// concrete implementation с конструктором и методом [execute].
-///
-/// ## Использование
-///
-/// Добавьте в `build.yaml`:
-/// ```yaml
-/// targets:
-///   $default:
-///     builders:
-///       nexo_generator|nexo_usecase:
-///         enabled: true
-/// ```
-///
-/// Или используйте в коде:
-/// ```dart
-/// Builder get nexoGenerator => SharedPartBuilder(
-///       [NexoUseCaseGenerator()],
-///       'nexo_usecase',
-///     );
-/// ```
-///
-/// См. также: [NexoUseCaseAnnotation].
 class NexoUseCaseGenerator
     extends GeneratorForAnnotation<NexoUseCaseAnnotation> {
   @override
@@ -111,12 +92,12 @@ class NexoUseCaseGenerator
     }
 
     // Build execute method body
-    final executeBody = _buildExecuteBody(
-      classElement,
-      executeMethod,
-      repoTypeName,
-      returnType,
-    );
+    final methodName = _inferRepositoryMethodName(classElement);
+    final executeBody = methodName != null
+        ? 'Future<$returnType> execute(dynamic params) =>\n'
+            '    _repository.$methodName(params);'
+        : 'Future<$returnType> execute(dynamic params) =>\n'
+            '    _repository.execute(params);';
 
     return '''
 /// Реализация [$className], сгенерированная build_runner.
@@ -137,45 +118,12 @@ $fieldDeclarations
 ''';
   }
 
-  String _buildExecuteBody(
-    ClassElement classElement,
-    MethodElement executeMethod,
-    String repoTypeName,
-    String returnType,
-  ) {
-    // Try to infer the repository method name
-    final methodName = _inferRepositoryMethodName(classElement);
-
-    // Build the call
-    if (methodName != null) {
-      // Try to infer the parameter access
-      final paramAccess = _inferParameterAccess(executeMethod);
-      if (paramAccess != null) {
-        return 'Future<$returnType> execute(dynamic params) =>\n'
-            '    _repository.$methodName($paramAccess);';
-      }
-    }
-
-    // Fallback: just call repository with params
-    return 'Future<$returnType> execute(dynamic params) =>\n'
-        '    _repository.$methodName(params);';
-  }
-
   String? _inferRepositoryMethodName(ClassElement classElement) {
-    // Get the class name and try to infer the method name
-    // e.g., GetUserUseCase -> getUser
-    final className = classElement.name ?? '';
+    final className = classElement.name;
     if (className.endsWith('UseCase')) {
       final prefix = className.substring(0, className.length - 7);
-      // Convert PascalCase to camelCase
       return '${prefix[0].toLowerCase()}${prefix.substring(1)}';
     }
-    return null;
-  }
-
-  String? _inferParameterAccess(MethodElement executeMethod) {
-    // Try to find a common parameter name like 'id', 'userId', etc.
-    // For now, return null to use fallback
     return null;
   }
 

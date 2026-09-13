@@ -4,7 +4,7 @@
 
 Modular toolkit for Flutter apps: **UseCase** layer, sealed **`Result`**, unified **`Failure`** model with mapping and localization, ready-made **`NexoAsyncCubit`** and state widgets, offline mutation queue (**outbox**), form validators, **Bloc/Cubit** wrappers, **Dio** (client and interceptors), base **data sources**, **breadcrumbs** for crash reports, and **logging**.
 
-**Version:** `0.0.7-beta.0`  
+**Version:** `0.0.8-beta.0`  
 **SDK:** Dart `^3.11.3`, Flutter `>=1.17.0`
 
 ## Installation

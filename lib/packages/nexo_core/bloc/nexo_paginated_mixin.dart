@@ -53,7 +53,7 @@ import 'pagination_controller.dart';
 /// ```
 ///
 /// См. также: [PaginationController], [PageChunk].
-mixin NexoPaginatedMixin<T, Cursor> on Bloc<Object, Object> {
+mixin NexoPaginatedMixin<T, Cursor> {
   /// Контроллер пагинации.
   final PaginationController<T, Cursor> _paginationController =
       PaginationController();

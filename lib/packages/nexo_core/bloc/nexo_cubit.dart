@@ -152,40 +152,37 @@ abstract class NexoCubit<S> extends Cubit<S>
 
   /// Выполняет мутацию (create/update/delete) с обработкой ошибок.
   ///
-  /// В отличие от [execute], не создаёт новый State — вызывает [onSuccess]
-  /// или [onError], которые модифицируют текущий state.
+  /// Принимает [Future<Result<T>>] — если результат [Right], вызывает
+  /// [onSuccess] с данными; если [Left] — [onError] с ошибкой.
   ///
   /// ```dart
   /// await executeMutation(
   ///   action: () => _repository.create(_token, payload),
-  ///   onSuccess: () {
-  ///     _emitReady(feedback: feedback('Создано'));
+  ///   onSuccess: (film) {
+  ///     _emitReady(feedback: AdminFeedback.success('Создано'));
   ///     load();
   ///   },
   ///   onError: (f) {
-  ///     _emitReady(feedback: feedback(f.userMessage, isError: true));
+  ///     _emitReady(feedback: AdminFeedback.error(f.userMessage));
   ///   },
   /// );
   /// ```
-  Future<void> executeMutation({
-    required Future<void> Function() action,
-    required void Function() onSuccess,
+  Future<void> executeMutation<T>({
+    required Future<Result<T>> Function() action,
+    required void Function(T data) onSuccess,
     required void Function(Failure failure) onError,
   }) async {
-    try {
-      await action();
-      onSuccess();
-    } on Failure catch (f) {
-      onError(f);
-    } catch (e, s) {
-      onError(toFailure(e, s));
-    }
+    final result = await action();
+    result.fold(
+      onFailure: (f) => onError(f),
+      onSuccess: (data) => onSuccess(data),
+    );
   }
 
   /// Загружает данные с автоматическим loading/success/error.
   ///
-  /// Упрощённая версия [executeEither] — принимает только
-  /// [action], [toState] и [toError].
+  /// Принимает [Future<Result<T>>] — маппит в состояние через [toState]
+  /// (успех) или [toError] (ошибка).
   ///
   /// ```dart
   /// await loadData<HomeFeedEntity>(
@@ -196,7 +193,7 @@ abstract class NexoCubit<S> extends Cubit<S>
   /// );
   /// ```
   Future<void> loadData<T>({
-    required Future<T> Function() action,
+    required Future<Result<T>> Function() action,
     required S Function(T data) toState,
     required S Function(Failure failure) toError,
     S Function()? onLoading,
@@ -204,16 +201,12 @@ abstract class NexoCubit<S> extends Cubit<S>
     if (onLoading != null && !isClosed) {
       emit(onLoading());
     }
-    try {
-      final result = await action();
-      if (!isClosed) {
-        emit(toState(result));
-      }
-    } catch (e, s) {
-      if (!isClosed) {
-        emit(toError(toFailure(e, s)));
-      }
-    }
+    final result = await action();
+    if (isClosed) return;
+    result.fold(
+      onFailure: (f) => emit(toError(f)),
+      onSuccess: (data) => emit(toState(data)),
+    );
   }
 
   /// Закрывает Cubit и отменяет все активные подписки.
