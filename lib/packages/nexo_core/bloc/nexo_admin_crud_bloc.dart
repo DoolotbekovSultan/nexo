@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
 
 import 'failure_support.dart';
+import 'nexo_bloc.dart';
 import 'nexo_crud_state.dart';
 
 /// Интерфейс репозитория для CRUD-операций в админ-панели.
@@ -58,52 +59,11 @@ abstract interface class NexoAdminRepository<T> {
   Future<void> delete(String token, int id);
 }
 
-/// Выполняет мутацию (создание/удаление/обновление) с обработкой ошибок.
-///
-/// Обёртка над try/catch для мутаций, которые не могут использовать [execute]
-/// из [NexoBloc], так как должны читать текущее состояние через [_emitReady].
-///
-/// ## Параметры
-///
-/// [emit] — emitter для отправки состояний.
-/// [action] — асинхронная операция.
-/// [onSuccess] — вызывается при успешном завершении.
-/// [onError] — вызывается при ошибке.
-/// [toFailure] — функция преобразования ошибки в [Failure].
-///
-/// ## Пример
-///
-/// ```dart
-/// await executeMutation(
-///   emit: emit,
-///   action: () => repository.create(token, body),
-///   onSuccess: () => _emitReady(emit, feedbackMessage: 'Created'),
-///   onError: (f) => _emitReady(emit, feedbackMessage: f.userMessage, isFeedbackError: true),
-///   toFailure: toFailure,
-/// );
-/// ```
-Future<void> executeMutation<T>({
-  required Emitter<T> emit,
-  required Future<void> Function() action,
-  required void Function() onSuccess,
-  required void Function(Failure failure) onError,
-  required Failure Function(Object error, StackTrace stackTrace) toFailure,
-}) async {
-  try {
-    await action();
-    onSuccess();
-  } on Failure catch (f) {
-    onError(f);
-  } catch (e, s) {
-    onError(toFailure(e, s));
-  }
-}
-
 /// Гeneric CRUD BLoC для админ-панелей.
 ///
-/// Предоставляет готовую реализацию загрузки, поиска, создания и удаления
-/// сущностей. Пользователь определяет только тип сущности и конфигурирует
-/// BLoC через параметры конструктора.
+/// Наследует [NexoBloc] и предоставляет готовую реализацию загрузки,
+/// поиска, создания и удаления сущностей. Пользователь определяет
+/// только тип сущности и конфигурирует BLoC через параметры конструктора.
 ///
 /// ## Параметры
 ///
@@ -128,9 +88,8 @@ Future<void> executeMutation<T>({
 /// - `on<CreateCrudEntity<T>>` — создание новой сущности.
 /// - `on<DeleteCrudEntity<T>>` — удаление сущности по идентификатору.
 ///
-/// См. также: [NexoCrudState], [NexoAdminRepository].
-abstract class NexoAdminCrudBloc<T> extends Bloc<Object, NexoCrudState<T>>
-    with FailureSupport {
+/// См. также: [NexoCrudState], [NexoAdminRepository], [NexoBloc].
+abstract class NexoAdminCrudBloc<T> extends NexoBloc<Object, NexoCrudState<T>> {
   /// Создаёт экземпляр [NexoAdminCrudBloc].
   ///
   /// [repository] — репозиторий для CRUD-операций.
@@ -230,7 +189,6 @@ abstract class NexoAdminCrudBloc<T> extends Bloc<Object, NexoCrudState<T>>
           ),
         );
       },
-      toFailure: toFailure,
     );
   }
 
@@ -262,7 +220,6 @@ abstract class NexoAdminCrudBloc<T> extends Bloc<Object, NexoCrudState<T>>
           ),
         );
       },
-      toFailure: toFailure,
     );
   }
 }
