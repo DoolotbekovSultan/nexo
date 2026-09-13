@@ -2503,11 +2503,17 @@ import 'package:injectable/injectable.dart';
 import '../../data/repositories/{{featureSnake}}_repository.dart';
 
 @injectable
-class Admin{{Feature}}Bloc extends NexoAdminCrudBloc<{{Feature}}Dto> {
+class Admin{{Feature}}Bloc extends NexoAdminCrudBloc<{{Feature}}Dto, String> {
   Admin{{Feature}}Bloc({
     required {{Feature}}Repository repository,
     required String token,
   }) : super(repository: repository, token: token, path: '{{featureSnake}}');
+
+  @override
+  String buildSuccessFeedback(String message) => message;
+
+  @override
+  String buildErrorFeedback(String message) => message;
 }
 ''';
 
@@ -2518,8 +2524,8 @@ class Admin{{Feature}}Bloc extends NexoAdminCrudBloc<{{Feature}}Dto> {
 const _tplAdminCrudState = r'''
 /// Состояние CRUD-операций для {{Feature}}.
 ///
-/// Использует [NexoCrudState] с типом [{{Feature}}Dto].
-typedef {{Feature}}CrudState = NexoCrudState<{{Feature}}Dto>;
+/// Использует [NexoCrudState] с типом [{{Feature}}Dto] и [String] feedback.
+typedef {{Feature}}CrudState = NexoCrudState<{{Feature}}Dto, String>;
 ''';
 
 // ──────────────────────────────────────────────────────────────────────────────
