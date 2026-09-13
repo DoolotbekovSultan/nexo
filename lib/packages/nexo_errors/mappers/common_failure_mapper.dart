@@ -8,6 +8,7 @@ import '../types/platform_failure.dart';
 import '../types/validation_failure.dart';
 import 'failure_sub_mapper.dart';
 import 'platform_exceptions.dart';
+import 'socket_failure_mapper.dart';
 
 /// Универсальный маппер ошибок, обрабатывающий типовые Dart-исключения.
 ///
@@ -85,59 +86,20 @@ final class CommonFailureMapper implements FailureSubMapper {
   }
 
   /// Преобразует текстовое сообщение сокет-ошибки в соответствующий [Failure].
-  ///
-  /// Анализирует ключевые слова в [socketMessage] (timeout, DNS, connection
-  /// refused и т.д.) для определения конкретного типа сетевой ошибки.
   Failure _mapSocketMessage(String? socketMessage) {
+    final networkFailure = mapSocketMessageToNetworkFailure(socketMessage);
+
     final message = socketMessage?.toLowerCase() ?? '';
 
-    if (_containsAny(message, const ['timed out', 'timeout'])) {
-      return const Failure.network(type: NetworkFailure.timeout);
-    }
-
-    if (_containsAny(message, const [
-      'failed host lookup',
-      'name or service not known',
-      'temporary failure in name resolution',
-      'dns',
-    ])) {
-      return const Failure.network(type: NetworkFailure.dnsLookupFailed);
-    }
-
-    if (_containsAny(message, const ['connection refused'])) {
-      return const Failure.network(type: NetworkFailure.connectionRefused);
-    }
-
-    if (_containsAny(message, const [
-      'no route to host',
-      'host is down',
-      'network is unreachable',
-      'host unreachable',
-    ])) {
-      return const Failure.network(type: NetworkFailure.hostUnreachable);
-    }
-
-    if (_containsAny(message, const [
-      'connection reset',
-      'connection reset by peer',
-      'broken pipe',
-    ])) {
-      return const Failure.network(type: NetworkFailure.connectionReset);
-    }
-
-    if (_containsAny(message, const ['proxy'])) {
-      return const Failure.network(type: NetworkFailure.proxyError);
-    }
-
-    if (_containsAny(message, const ['too many redirects', 'redirect'])) {
+    if (message.containsAny(const ['too many redirects', 'redirect'])) {
       return const Failure.network(type: NetworkFailure.tooManyRedirects);
     }
 
-    if (_containsAny(message, const ['invalid url', 'no host specified'])) {
+    if (message.containsAny(const ['invalid url', 'no host specified'])) {
       return const Failure.network(type: NetworkFailure.invalidUrl);
     }
 
-    return const Failure.network(type: NetworkFailure.noInternet);
+    return Failure.network(type: networkFailure);
   }
 
   /// Преобразует [FormatException] в [Failure] на основе типа ошибки парсинга.
@@ -146,21 +108,21 @@ final class CommonFailureMapper implements FailureSubMapper {
   Failure _mapFormatException(FormatException error) {
     final message = error.message.toLowerCase();
 
-    if (_containsAny(message, const ['json'])) {
+    if (message.containsAny(const ['json'])) {
       return Failure.parse(
         type: ParseFailure.jsonDecode,
         message: error.message,
       );
     }
 
-    if (_containsAny(message, const ['date', 'datetime'])) {
+    if (message.containsAny(const ['date', 'datetime'])) {
       return Failure.parse(
         type: ParseFailure.invalidDateFormat,
         message: error.message,
       );
     }
 
-    if (_containsAny(message, const ['type'])) {
+    if (message.containsAny(const ['type'])) {
       return Failure.parse(
         type: ParseFailure.unexpectedType,
         message: error.message,
@@ -180,56 +142,48 @@ final class CommonFailureMapper implements FailureSubMapper {
   Failure _mapHttpMessage(String message) {
     final raw = message.toLowerCase();
 
-    if (_containsAny(raw, const ['401', 'unauthorized'])) {
+    if (raw.containsAny(const ['401', 'unauthorized'])) {
       return Failure.http(type: HttpFailure.unauthorized, message: message);
     }
 
-    if (_containsAny(raw, const ['403', 'forbidden'])) {
+    if (raw.containsAny(const ['403', 'forbidden'])) {
       return Failure.http(type: HttpFailure.forbidden, message: message);
     }
 
-    if (_containsAny(raw, const ['404', 'not found'])) {
+    if (raw.containsAny(const ['404', 'not found'])) {
       return Failure.http(type: HttpFailure.notFound, message: message);
     }
 
-    if (_containsAny(raw, const ['408', 'timeout'])) {
+    if (raw.containsAny(const ['408', 'timeout'])) {
       return Failure.http(type: HttpFailure.requestTimeout, message: message);
     }
 
-    if (_containsAny(raw, const ['429', 'too many requests'])) {
+    if (raw.containsAny(const ['429', 'too many requests'])) {
       return Failure.http(type: HttpFailure.tooManyRequests, message: message);
     }
 
-    if (_containsAny(raw, const ['500', 'internal server error'])) {
+    if (raw.containsAny(const ['500', 'internal server error'])) {
       return Failure.http(
         type: HttpFailure.internalServerError,
         message: message,
       );
     }
 
-    if (_containsAny(raw, const ['502', 'bad gateway'])) {
+    if (raw.containsAny(const ['502', 'bad gateway'])) {
       return Failure.http(type: HttpFailure.badGateway, message: message);
     }
 
-    if (_containsAny(raw, const ['503', 'service unavailable'])) {
+    if (raw.containsAny(const ['503', 'service unavailable'])) {
       return Failure.http(
         type: HttpFailure.serviceUnavailable,
         message: message,
       );
     }
 
-    if (_containsAny(raw, const ['504', 'gateway timeout'])) {
+    if (raw.containsAny(const ['504', 'gateway timeout'])) {
       return Failure.http(type: HttpFailure.gatewayTimeout, message: message);
     }
 
     return Failure.http(type: HttpFailure.unknown, message: message);
-  }
-
-  /// Проверяет, содержит ли [source] хотя бы одну строку из [patterns].
-  bool _containsAny(String source, List<String> patterns) {
-    for (final pattern in patterns) {
-      if (source.contains(pattern)) return true;
-    }
-    return false;
   }
 }

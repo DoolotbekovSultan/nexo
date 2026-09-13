@@ -24,9 +24,12 @@ abstract final class TemplateRenderer {
     if (norm.endsWith('_test.dart')) {
       if (norm.contains('mapper')) return _tplMapperTest;
       if (norm.contains('cubit') || norm.contains('bloc')) {
+        if (options.hasAdminCrud) return _tplAdminCrudBlocTest;
+        if (options.hasPaginated) return _tplPaginatedBlocTest;
         return options.hasBloc ? _tplBlocTest : _tplCubitTest;
       }
       if (norm.contains('usecase') || norm.contains('use_case')) {
+        if (options.hasUsecaseGen) return _tplUsecaseGenTest;
         return _tplUseCaseTest;
       }
       if (norm.contains('repository')) return _tplRepositoryTest;
@@ -183,6 +186,7 @@ abstract final class TemplateRenderer {
     if (norm.contains('domain/usecases/') &&
         norm.startsWith('domain/usecases/get_') &&
         !norm.contains('by_id')) {
+      if (options.hasUsecaseGen) return _tplUsecaseGen;
       return _tplUseCase;
     }
 
@@ -233,6 +237,8 @@ abstract final class TemplateRenderer {
       return _tplBlocEvent;
     }
     if (norm.contains('presentation/bloc/') && norm.endsWith('_bloc.dart')) {
+      if (options.hasAdminCrud) return _tplAdminCrudBloc;
+      if (options.hasPaginated) return _tplPaginatedBloc;
       return _tplBloc;
     }
 
@@ -251,6 +257,7 @@ abstract final class TemplateRenderer {
     if (norm.endsWith('_state.dart') &&
         (norm.contains('presentation/bloc/') ||
             norm.contains('presentation/cubit/'))) {
+      if (options.hasAdminCrud) return _tplAdminCrudState;
       if (options.freezed) return _tplStateFreezed;
       return _tplState;
     }
@@ -2479,6 +2486,202 @@ void main() {
   group('{{Feature}}DataSource', () {
     test('can be instantiated', () {
       // TODO(nexo): add datasource tests.
+      expect(true, isTrue);
+    });
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Admin CRUD Bloc
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplAdminCrudBloc = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../data/repositories/{{featureSnake}}_repository.dart';
+
+@injectable
+class Admin{{Feature}}Bloc extends NexoAdminCrudBloc<{{Feature}}Dto> {
+  Admin{{Feature}}Bloc({
+    required {{Feature}}Repository repository,
+    required String token,
+  }) : super(repository: repository, token: token, path: '{{featureSnake}}');
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Admin CRUD State
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplAdminCrudState = r'''
+/// Состояние CRUD-операций для {{Feature}}.
+///
+/// Использует [NexoCrudState] с типом [{{Feature}}Dto].
+typedef {{Feature}}CrudState = NexoCrudState<{{Feature}}Dto>;
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Admin CRUD Bloc Test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplAdminCrudBlocTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nexo/nexo_core.dart';
+
+import '{{featureSnake}}_bloc.dart';
+
+class Mock{{Feature}}Repository extends Mock
+    implements {{Feature}}Repository {}
+
+void main() {
+  late Admin{{Feature}}Bloc bloc;
+  late Mock{{Feature}}Repository mockRepository;
+
+  setUp(() {
+    mockRepository = Mock{{Feature}}Repository();
+    bloc = Admin{{Feature}}Bloc(
+      repository: mockRepository,
+      token: 'test-token',
+    );
+  });
+
+  tearDown(() {
+    bloc.close();
+  });
+
+  group('Admin{{Feature}}Bloc', () {
+    test('initial state is loading', () {
+      expect(bloc.state, isA<NexoCrudLoading>());
+    });
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Paginated Bloc
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplPaginatedBloc = r'''
+import 'package:nexo/nexo_core.dart';
+import 'package:injectable/injectable.dart';
+
+import '../../domain/entities/{{featureSnake}}_entity.dart';
+import '../../domain/usecases/get_{{featureSnake}}_usecase.dart';
+import '{{featureSnake}}_event.dart';
+import '{{featureSnake}}_state.dart';
+
+@injectable
+class {{Feature}}Bloc extends NexoBloc<{{Feature}}Event, {{Feature}}State>
+    with NexoPaginatedMixin<{{Feature}}Entity, String> {
+  {{Feature}}Bloc({
+    required this._get{{Feature}}UseCase,
+  }) : super(const {{Feature}}State.loading()) {
+    on<{{Feature}}Event>(_onEvent);
+  }
+
+  final Get{{Feature}}UseCase _get{{Feature}}UseCase;
+
+  Future<void> _onEvent(
+    {{Feature}}Event event,
+    Emitter<{{Feature}}State> emit,
+  ) async {
+    await event.when(load: () => _onLoad(emit));
+  }
+
+  Future<void> _onLoad(Emitter<{{Feature}}State> emit) async {
+    await loadMore(
+      emit: emit,
+      loader: (cursor) async {
+        final result = await _get{{Feature}}UseCase(
+          Get{{Feature}}Params(cursor: cursor),
+        );
+        return result.fold(
+          onFailure: (f) => throw Exception(f.userMessage),
+          onSuccess: (data) => PageChunk(
+            items: data.items,
+            nextCursor: data.nextCursor,
+            hasMore: data.hasMore,
+          ),
+        );
+      },
+      onReady: (items, hasMore) => {{Feature}}State.ready(
+        items: items,
+        hasMore: hasMore,
+      ),
+    );
+  }
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Paginated Bloc Test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplPaginatedBlocTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:nexo/nexo_core.dart';
+
+import '{{featureSnake}}_bloc.dart';
+
+class MockGet{{Feature}}UseCase extends Mock
+    implements Get{{Feature}}UseCase {}
+
+void main() {
+  late {{Feature}}Bloc bloc;
+  late MockGet{{Feature}}UseCase mockUseCase;
+
+  setUp(() {
+    mockUseCase = MockGet{{Feature}}UseCase();
+    bloc = {{Feature}}Bloc(get{{Feature}}UseCase: mockUseCase);
+  });
+
+  tearDown(() {
+    bloc.close();
+  });
+
+  group('{{Feature}}Bloc', () {
+    test('initial state is loading', () {
+      expect(bloc.state, isA<{{Feature}}State>());
+    });
+  });
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// @NexoUseCase generator
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplUsecaseGen = r'''
+import 'package:nexo/nexo_core.dart';
+import '../entities/{{featureSnake}}_entity.dart';
+import '../repositories/i_{{featureSnake}}_repository.dart';
+
+class Get{{Feature}}Params {
+  const Get{{Feature}}Params({this.cursor});
+  final String? cursor;
+}
+
+@NexoUseCaseAnnotation()
+abstract class Get{{Feature}}UseCase {
+  Future<List<{{Feature}}Entity>> execute(Get{{Feature}}Params params);
+}
+''';
+
+// ──────────────────────────────────────────────────────────────────────────────
+// @NexoUseCase test
+// ──────────────────────────────────────────────────────────────────────────────
+
+const _tplUsecaseGenTest = r'''
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('@NexoUseCase generator', () {
+    test('generates valid use case', () {
+      // TODO(nexo): add use case generator tests.
       expect(true, isTrue);
     });
   });

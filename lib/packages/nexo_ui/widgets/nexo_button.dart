@@ -43,9 +43,7 @@ class NexoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final VoidCallback? effectiveOnPressed = isLoading || onPressed == null
-        ? null
-        : onPressed;
+    final effectiveOnPressed = isLoading ? null : onPressed;
 
     Widget content = Text(label);
     if (isLoading) {

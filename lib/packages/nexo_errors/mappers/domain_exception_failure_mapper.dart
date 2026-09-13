@@ -9,9 +9,37 @@ import 'failure_sub_mapper.dart';
 /// Sync) в их функциональные аналоги [Failure]. Используется для перевода
 /// исключений доменного слоя в унифицированную модель ошибок.
 ///
+/// Поддерживает кастомные маппинги через [extraMappings] — позволяет
+/// расширять маппер без модификации исходного кода.
+///
+/// ## Пример использования
+///
+/// ```dart
+/// // Стандартный маппер
+/// const mapper = DomainExceptionFailureMapper();
+///
+/// // С кастомными маппингами
+/// const mapper = DomainExceptionFailureMapper(
+///   extraMappings: {
+///     AdminApiException: (error) => Failure.http(
+///       type: HttpFailure.internalServerError,
+///       message: (error as AdminApiException).message,
+///     ),
+///   },
+/// );
+/// ```
+///
 /// См. также: [AppException], [FailureSubMapper].
 final class DomainExceptionFailureMapper implements FailureSubMapper {
-  const DomainExceptionFailureMapper();
+  /// Создаёт маппер доменных исключений.
+  ///
+  /// [extraMappings] — дополнительные маппинги: тип исключения → функция маппинга.
+  const DomainExceptionFailureMapper({
+    Map<Type, Failure Function(Object)>? extraMappings,
+  }) : extraMappings = extraMappings ?? const {};
+
+  /// Дополнительные маппинги: тип исключения → функция маппинга.
+  final Map<Type, Failure Function(Object)> extraMappings;
 
   /// Пытается преобразовать [error] в [Failure], если это [AppException].
   ///
@@ -21,6 +49,11 @@ final class DomainExceptionFailureMapper implements FailureSubMapper {
   /// **Возвращает:** [Failure] или `null`, если [error] не является [AppException].
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
+    // 1. Проверяем кастомные маппинги
+    final customMapper = extraMappings[error.runtimeType];
+    if (customMapper != null) return customMapper(error);
+
+    // 2. Стандартные 13 типов
     return switch (error) {
       AuthAppException e => Failure.auth(type: e.type, message: e.message),
       ValidationAppException e => Failure.validation(

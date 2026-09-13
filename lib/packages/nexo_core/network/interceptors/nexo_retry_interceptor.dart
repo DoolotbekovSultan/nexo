@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 
+import 'clone_request_options.dart';
+
 /// Функция определения условия повторной попытки.
 ///
 /// Принимает [error] и номер попытки [retryAttempt] (начиная с 1).
@@ -256,24 +258,10 @@ class NexoRetryInterceptor extends Interceptor {
   }
 
   Future<Response<dynamic>> _retry(RequestOptions options) {
-    final headers = Map<String, dynamic>.from(options.headers);
-    final extra = Map<String, dynamic>.from(options.extra);
-
     return dio.requestUri<dynamic>(
       options.uri,
       data: options.data,
-      options: Options(
-        method: options.method,
-        headers: headers,
-        extra: extra,
-        responseType: options.responseType,
-        contentType: options.contentType,
-        followRedirects: options.followRedirects,
-        receiveDataWhenStatusError: options.receiveDataWhenStatusError,
-        validateStatus: options.validateStatus,
-        receiveTimeout: options.receiveTimeout,
-        sendTimeout: options.sendTimeout,
-      ),
+      options: cloneRequestOptions(options),
       cancelToken: options.cancelToken,
       onReceiveProgress: options.onReceiveProgress,
       onSendProgress: options.onSendProgress,

@@ -6,12 +6,12 @@ import 'failure_sub_mapper.dart';
 /// Специализированный маппер ошибок ORM Drift (SQLite).
 ///
 /// Преобразует исключения Drift/SQLite в [Failure] категорий [DatabaseFailure]
-/// и [StorageFailure]. Определяет тип ошибки по тексту сообщения: нарушение
-/// уникальности, внешнего ключа, блокировка, повреждение, нехватка места,
-/// таймаут, ошибка транзакции, миграция и операции CRUD.
+/// и [StorageFailure]. Определяет тип ошибки по stackTrace и тексту сообщения:
+/// нарушение уникальности, внешнего ключа, блокировка, повреждение, нехватка
+/// места, таймаут, ошибка транзакции, миграция и операции CRUD.
 ///
-/// Идентификация Drift-ошибок происходит по имени.runtimeType и тексту
-/// сообщения (contains `drift`, `sqlite`, `sql error`).
+/// Идентификация Drift-ошибок происходит по presence `package:drift` в stackTrace
+/// и ключевым словам в имени типа/сообщении.
 ///
 /// См. также: [FailureSubMapper], [IsarFailureMapper], [HiveFailureMapper].
 final class DriftFailureMapper implements FailureSubMapper {
@@ -19,24 +19,25 @@ final class DriftFailureMapper implements FailureSubMapper {
 
   /// Пытается преобразовать [error] в [Failure], если ошибка связана с Drift/SQLite.
   ///
-  /// Определяет принадлежность к Drift по имени типа и тексту сообщения.
+  /// Определяет принадлежность к Drift по stackTrace и тексту сообщения.
   /// Маппит ошибки на конкретные типы [DatabaseFailure] и [StorageFailure].
   ///
   /// **Возвращает:** [Failure] или `null`, если ошибка не связана с Drift.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
-    final runtime = error.runtimeType.toString().toLowerCase();
-    final text = error.toString().toLowerCase();
+    final traceStr = stackTrace?.toString() ?? '';
+    final errorStr = error.toString();
 
-    final looksLikeDrift =
-        runtime.contains('drift') ||
-        runtime.contains('sqlite') ||
-        text.contains('sqlite') ||
-        text.contains('sql error');
+    // Проверяем по stackTrace — есть ли package:drift в frame
+    final isDriftError =
+        traceStr.contains('package:drift') ||
+        errorStr.contains('DriftError') ||
+        errorStr.contains('SqliteError') ||
+        errorStr.contains('SQLiteException');
 
-    if (!looksLikeDrift) return null;
+    if (!isDriftError) return null;
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'unique constraint failed',
       'duplicate',
       'already exists',
@@ -46,25 +47,29 @@ final class DriftFailureMapper implements FailureSubMapper {
       );
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'foreign key constraint failed',
       'foreign key',
     ])) {
       return const Failure.database(type: DatabaseFailure.foreignKeyViolation);
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'not null constraint failed',
       'null value',
     ])) {
       return const Failure.database(type: DatabaseFailure.notNullViolation);
     }
 
-    if (_containsAny(text, const ['database is locked', 'locked', 'busy'])) {
+    if (_containsAny(errorStr, const [
+      'database is locked',
+      'locked',
+      'busy',
+    ])) {
       return const Failure.database(type: DatabaseFailure.locked);
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'malformed',
       'corrupt',
       'corrupted',
@@ -73,19 +78,19 @@ final class DriftFailureMapper implements FailureSubMapper {
       return const Failure.database(type: DatabaseFailure.corrupted);
     }
 
-    if (_containsAny(text, const ['no space left', 'disk full'])) {
+    if (_containsAny(errorStr, const ['no space left', 'disk full'])) {
       return const Failure.storage(type: StorageFailure.outOfSpace);
     }
 
-    if (_containsAny(text, const ['timeout', 'timed out'])) {
+    if (_containsAny(errorStr, const ['timeout', 'timed out'])) {
       return const Failure.database(type: DatabaseFailure.queryTimeout);
     }
 
-    if (_containsAny(text, const ['transaction', 'rollback', 'commit'])) {
+    if (_containsAny(errorStr, const ['transaction', 'rollback', 'commit'])) {
       return const Failure.database(type: DatabaseFailure.transactionFailed);
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'no such table',
       'migration',
       'schema version',
@@ -95,19 +100,19 @@ final class DriftFailureMapper implements FailureSubMapper {
       return const Failure.database(type: DatabaseFailure.migrationFailed);
     }
 
-    if (_containsAny(text, const ['select', 'query', 'read'])) {
+    if (_containsAny(errorStr, const ['select', 'query', 'read'])) {
       return const Failure.database(type: DatabaseFailure.readError);
     }
 
-    if (_containsAny(text, const ['insert', 'write', 'save', 'upsert'])) {
+    if (_containsAny(errorStr, const ['insert', 'write', 'save', 'upsert'])) {
       return const Failure.database(type: DatabaseFailure.writeError);
     }
 
-    if (_containsAny(text, const ['update'])) {
+    if (_containsAny(errorStr, const ['update'])) {
       return const Failure.database(type: DatabaseFailure.updateError);
     }
 
-    if (_containsAny(text, const ['delete', 'remove'])) {
+    if (_containsAny(errorStr, const ['delete', 'remove'])) {
       return const Failure.database(type: DatabaseFailure.deleteError);
     }
 

@@ -4,7 +4,7 @@
 
 Modular toolkit for Flutter apps: **UseCase** layer, sealed **`Result`**, unified **`Failure`** model with mapping and localization, ready-made **`NexoAsyncCubit`** and state widgets, offline mutation queue (**outbox**), form validators, **Bloc/Cubit** wrappers, **Dio** (client and interceptors), base **data sources**, **breadcrumbs** for crash reports, and **logging**.
 
-**Version:** `0.0.5-beta.0`  
+**Version:** `0.0.6-beta.0`  
 **SDK:** Dart `^3.11.3`, Flutter `>=1.17.0`
 
 ## Installation
@@ -115,17 +115,29 @@ Pass `NexoLogger` to use cases and data sources for consistent logging.
 - **`Failure`** — sealed class with variants: network, HTTP, auth, validation, storage, database, cache, parse, permissions, platform, file, location, notification, payment, sync, unknown.
 - Handy getters: **`userMessage`** (Russian by default), **`localizedMessage`**, **`isRetryable`**, **`requiresLogout`**, **`requiresSettings`**, **`logCategory`**.
 - **`Failure.code`** — stable code for analytics (see "Core" section above).
-- **`FailureMapper.from(error, stackTrace?)`** — centralized exception-to-`Failure` conversion via a chain of **`FailureSubMapper`**.
-- **`Object.toFailure([stackTrace])`** — extension (declared in `failure_mapper_extension.dart` and duplicated in `failure_mapper.dart` as `FailureMapperX`).
+- **`FailureMapper2`** — расширяемый маппер ошибок с поддержкой DI:
+  - `register(mapper)` / `registerAll(mappers)` — регистрация кастомных мапперов.
+  - Кастомные мапперы имеют приоритет над встроенными.
+  - `fromStatic()` для обратной совместимости.
+- **`FailureMapper.from(error, stackTrace?)`** — deprecated, делегирует в `FailureMapper2`.
+- **`Object.toFailure([stackTrace])`** — extension (declared in `failure_mapper_extension.dart`).
 - **`Result<T>`**, **`StreamResult<T>`**, **`FailurePresenter`**, **`NexoCrashReporter`**.
 
-Sub-mappers (order in `FailureMapper`): domain exceptions, Firebase Auth, Firebase Messaging (by `FirebaseException`), Dio, platform, Hive, Isar, Drift/SQLite (heuristic by error text), file system, common.
+Sub-mappers (order in `FailureMapper2`): domain exceptions (с `extraMappings`), Firebase Auth, Firebase Messaging, Dio, platform, Hive (stackTrace-based), Isar (stackTrace-based), Drift (stackTrace-based), file system, common.
 
 ### nexo_core — UseCase
 
 - **`NexoUseCase<T, Params>`** — abstract class with `execute` and `call`: `Future<Result<T>>`, logging (including **`failure.code`**), exception catching and mapping via `toFailure`.
 - **`NexoStreamUseCase<T, Params>`** — `build` returns `Stream<T>`; `call` gives `Stream<Result<T>>`.
 - **`NoParams`** — for parameterless use cases (see `no_params.dart`).
+- **`@NexoUseCaseAnnotation`** — codegen аннотация для генерации implementation:
+  ```dart
+  @NexoUseCaseAnnotation(repo: IUserRepository)
+  abstract class GetUserUseCase {
+    Future<User> execute(GetUserParams params);
+  }
+  // Генерирует: @injectable class GetUserUseCaseImpl extends NexoUseCase<User, GetUserParams>
+  ```
 
 ### nexo_core — Bloc / Cubit
 
@@ -136,6 +148,31 @@ Sub-mappers (order in `FailureMapper`): domain exceptions, Firebase Auth, Fireba
 - **`NexoCubit`** additionally: **`SubscriptionMixin`**, keyed subscription cancellation, `close` cancels subscriptions.
 - **`NexoBlocObserver`** — `BlocObserver` with lifecycle / events / changes / errors logging via `NexoLogger`, `shouldLogBloc` filter, log truncation; bloc errors are automatically written to crash-reporter breadcrumbs.
 - Helper files: `bloc_transformers.dart`, `optimistic_update_helper.dart`, `pagination_controller.dart`, `reconnecting_stream_service.dart`, `nexo_bloc_observer.dart`.
+
+#### `NexoAdminCrudBloc<T>` — generic CRUD для админ-панелей
+
+```dart
+@injectable
+class AdminFilmsBloc extends NexoAdminCrudBloc<FilmDto> {
+  AdminFilmsBloc({
+    required FilmRepository repository,
+    required String token,
+  }) : super(repository: repository, token: token, path: 'films');
+}
+```
+
+- Автоматические обработчики: load, search, create, delete.
+- `executeMutation()` — обёртка для мутаций с чтением текущего state.
+- `NexoCrudState<T>` — sealed: loading, ready, error.
+
+#### `NexoPaginatedMixin<T, Cursor>` — cursor-based пагинация
+
+```dart
+class ClipsFeedBloc extends NexoBloc<ClipsFeedEvent, ClipsFeedState>
+    with NexoPaginatedMixin<ClipFeedEntity, int> {
+  // loadMore(emit, loader, onReady) — автоматический emit loading/ready/error
+}
+```
 
 #### `NexoAsyncCubit<T>` — screen in three lines
 

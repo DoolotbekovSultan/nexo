@@ -59,3 +59,26 @@ abstract class NexoLogger {
     StackTrace? stackTrace,
   });
 }
+
+/// Удобные расширения для [NexoLogger].
+extension NexoLoggerX on NexoLogger {
+  /// Логирует начало/успех/ошибку асинхронной операции.
+  ///
+  /// ```dart
+  /// final users = await logger.logAction(
+  ///   'fetchUsers',
+  ///   () => api.getUsers(),
+  /// );
+  /// ```
+  Future<T> logAction<T>(String label, Future<T> Function() action) async {
+    debug('Start: $label');
+    try {
+      final result = await action();
+      debug('Done: $label');
+      return result;
+    } catch (e, st) {
+      error(message: 'Failed: $label', error: e, stackTrace: st);
+      rethrow;
+    }
+  }
+}

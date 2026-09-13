@@ -9,10 +9,10 @@ import 'failure_sub_mapper.dart';
 ///
 /// Преобразует ошибки Hive (отсутствие бокса, повреждение данных,
 /// нехватка места, ошибки шифрования/расшифровки и т.д.) в
-/// соответствующие [Failure]. Определяет тип ошибки по ключевым словам
-/// в сообщении исключения.
+/// соответствующие [Failure]. Определяет тип ошибки по stackTrace
+/// и ключевым словам в сообщении исключения.
 ///
-/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper2].
 ///
 /// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class HiveFailureMapper implements FailureSubMapper {
@@ -20,7 +20,7 @@ final class HiveFailureMapper implements FailureSubMapper {
 
   /// Пытается преобразовать [error] в [Failure], если это ошибка Hive.
   ///
-  /// Анализирует тип и сообщение ошибки для определения категории:
+  /// Анализирует stackTrace и сообщение ошибки для определения категории:
   /// - Отсутствие/закрытие бокса → [CacheFailure.miss]
   /// - Повреждение данных → [StorageFailure.corrupted]
   /// - Нехватка места → [StorageFailure.outOfSpace]
@@ -30,21 +30,21 @@ final class HiveFailureMapper implements FailureSubMapper {
   /// **Возвращает:** [Failure] или `null`, если ошибка не является ошибкой Hive.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
-    final runtime = error.runtimeType.toString().toLowerCase();
-    final text = error.toString().toLowerCase();
+    final traceStr = stackTrace?.toString() ?? '';
+    final errorStr = error.toString();
 
-    final looksLikeHive =
-        runtime.contains('hive') ||
-        runtime.contains('box') ||
-        text.contains('hive') ||
-        text.contains('box') ||
-        text.contains('lazybox') ||
-        text.contains('hiveerror');
+    // Проверяем по stackTrace — есть ли package:hive в frame
+    final isHiveError =
+        traceStr.contains('package:hive') ||
+        errorStr.contains('HiveError') ||
+        errorStr.contains('HiveImpl') ||
+        errorStr.contains('BoxCaptureError') ||
+        errorStr.contains('LazyBox');
 
-    if (!looksLikeHive) return null;
+    if (!isHiveError) return null;
 
     // Box не найден / не открыт / не инициализирован
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'box not found',
       'not found',
       'no box',
@@ -60,7 +60,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Повреждение данных
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'corrupt',
       'corrupted',
       'broken',
@@ -73,7 +73,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Нет места
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'disk full',
       'no space left',
       'space left on device',
@@ -83,7 +83,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Нет доступа
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'permission denied',
       'access denied',
       'operation not permitted',
@@ -93,7 +93,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Хранилище недоступно
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'unavailable',
       'temporarily unavailable',
       'resource busy',
@@ -106,7 +106,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Шифрование / расшифровка
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'encrypt',
       'encryption',
       'cipher',
@@ -115,7 +115,7 @@ final class HiveFailureMapper implements FailureSubMapper {
       return const Failure.storage(type: StorageFailure.encryptionError);
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'decrypt',
       'decryption',
       'invalid key',
@@ -125,7 +125,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Несовместимая версия / адаптер
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'unknown typeid',
       'typeid',
       'type adapter',
@@ -139,7 +139,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Ошибки парсинга / схемы
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'type',
       'cast',
       'deserialize',
@@ -152,7 +152,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Очистка
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'clear',
       'clearing box',
       'failed to clear',
@@ -161,12 +161,16 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Удаление
-    if (_containsAny(text, const ['delete', 'remove', 'failed to delete'])) {
+    if (_containsAny(errorStr, const [
+      'delete',
+      'remove',
+      'failed to delete',
+    ])) {
       return const Failure.storage(type: StorageFailure.deleteError);
     }
 
     // Запись
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'write',
       'put',
       'save',
@@ -178,7 +182,7 @@ final class HiveFailureMapper implements FailureSubMapper {
     }
 
     // Чтение
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'read',
       'load',
       'open box',

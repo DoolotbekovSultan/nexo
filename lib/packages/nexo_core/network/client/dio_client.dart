@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:nexo/packages/nexo_core/network/client/http_methods/http_method.dart';
-import 'package:nexo/packages/nexo_core/network/client/http_methods/http_method_extension.dart';
 
 /// Обёртка над [Dio] с типизированными методами HTTP-запросов.
 ///

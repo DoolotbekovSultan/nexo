@@ -1,5 +1,5 @@
 import 'package:nexo/packages/nexo_errors/failure.dart';
-import 'package:nexo/packages/nexo_errors/failure_mapper.dart';
+import 'package:nexo/packages/nexo_errors/failure_mapper_2.dart';
 
 /// Удобное расширение для преобразования ошибок в [Failure].
 ///
@@ -20,8 +20,8 @@ extension FailureMapperExtension on Object {
   ///
   /// [stackTrace] — стек вызовов (опционален).
   ///
-  /// **Возвращает:** [Failure], полученный через [FailureMapper.from].
+  /// **Возвращает:** [Failure], полученный через [FailureMapper2.fromStatic].
   Failure toFailure([StackTrace? stackTrace]) {
-    return FailureMapper.from(this, stackTrace);
+    return FailureMapper2.fromStatic(this, stackTrace);
   }
 }

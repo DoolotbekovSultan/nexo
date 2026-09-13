@@ -11,27 +11,30 @@
 ///   data: {'name': 'John'},
 /// );
 /// ```
-///
-/// См. также: [DioClient], [HttpMethodExtension].
 enum HttpMethod {
   /// HTTP GET — получение данных.
-  get,
+  get('GET'),
 
   /// HTTP POST — создание ресурса.
-  post,
+  post('POST'),
 
   /// HTTP PUT — полная замена ресурса.
-  put,
+  put('PUT'),
 
   /// HTTP PATCH — частичное обновление ресурса.
-  patch,
+  patch('PATCH'),
 
   /// HTTP DELETE — удаление ресурса.
-  delete,
+  delete('DELETE'),
 
   /// HTTP HEAD — получение заголовков без тела.
-  head,
+  head('HEAD'),
 
   /// HTTP OPTIONS — запрос доступных методов.
-  options,
+  options('OPTIONS');
+
+  const HttpMethod(this.value);
+
+  /// Строковое представление HTTP-метода в верхнем регистре.
+  final String value;
 }

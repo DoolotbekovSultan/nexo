@@ -67,4 +67,17 @@ extension NexoAsyncStateDataX<T> on NexoAsyncState<T> {
     NexoAsyncFailure(:final failure) => failure,
     _ => null,
   };
+
+  /// Сопоставляет состояние с четырьмя ветками.
+  R map<R>({
+    required R Function() onIdle,
+    required R Function() onLoading,
+    required R Function(T data) onSuccess,
+    required R Function(Failure failure) onFailure,
+  }) => switch (this) {
+    NexoAsyncIdle() => onIdle(),
+    NexoAsyncLoading() => onLoading(),
+    NexoAsyncSuccess(:final data) => onSuccess(data),
+    NexoAsyncFailure(:final failure) => onFailure(failure),
+  };
 }

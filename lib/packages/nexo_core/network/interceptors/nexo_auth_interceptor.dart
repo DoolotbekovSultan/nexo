@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
+import 'clone_request_options.dart';
+
 /// Функция получения текущего токена аутентификации.
 ///
 /// Возвращает токен или `null`, если пользователь не авторизован.
@@ -236,27 +238,16 @@ class NexoAuthInterceptor extends Interceptor {
       );
     }
 
-    final headers = Map<String, dynamic>.from(options.headers)
-      ..[authHeaderKey] = '$bearerPrefix $token';
-
-    final extra = Map<String, dynamic>.from(options.extra)..[retriedKey] = true;
-
     onLog?.call('Retrying: ${options.method} ${options.uri}');
 
     return dio.requestUri<dynamic>(
       options.uri,
       data: options.data,
-      options: Options(
-        method: options.method,
-        headers: headers,
-        extra: extra,
-        responseType: options.responseType,
-        contentType: options.contentType,
-        followRedirects: options.followRedirects,
-        receiveDataWhenStatusError: options.receiveDataWhenStatusError,
-        validateStatus: options.validateStatus,
-        receiveTimeout: options.receiveTimeout,
-        sendTimeout: options.sendTimeout,
+      options: cloneRequestOptions(
+        options,
+        headers: Map<String, dynamic>.from(options.headers)
+          ..[authHeaderKey] = '$bearerPrefix $token',
+        extra: Map<String, dynamic>.from(options.extra)..[retriedKey] = true,
       ),
       cancelToken: options.cancelToken,
       onReceiveProgress: options.onReceiveProgress,

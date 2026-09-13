@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nexo/packages/nexo_errors/failure.dart';
 import 'package:nexo/packages/nexo_errors/result.dart';
 
+import 'bloc_execute_helper.dart';
 import 'failure_support.dart';
 import 'subscription_mixin.dart';
 
@@ -39,119 +40,36 @@ abstract class NexoCubit<S> extends Cubit<S>
   NexoCubit(super.initialState);
 
   /// Выполняет асинхронную операцию и маппит результат в состояние Cubit.
-  ///
-  /// [action] — асинхронная операция, возвращающая результат типа [T].
-  /// [onLoading] — опциональная функция, возвращающая состояние загрузки.
-  ///   Если указана, состояние загрузки будет испущено перед выполнением [action].
-  /// [onSuccess] — функция маппинга успешного результата в состояние.
-  /// [onError] — функция маппинга ошибки [Failure] в состояние.
-  ///
-  /// **Возвращает:** [Future], который завершается после испускания конечного состояния.
-  ///
-  /// ## Пример
-  ///
-  /// ```dart
-  /// await execute(
-  ///   action: () => apiClient.fetchUsers(),
-  ///   onLoading: () => State.loading(),
-  ///   onSuccess: (users) => State.loaded(users),
-  ///   onError: (failure) => State.error(failure),
-  /// );
-  /// ```
   Future<void> execute<T>({
     required Future<T> Function() action,
     S Function()? onLoading,
     required S Function(T data) onSuccess,
     required S Function(Failure failure) onError,
-  }) async {
-    if (onLoading != null && !isClosed) {
-      emit(onLoading());
-    }
-
-    try {
-      final result = await action();
-      if (!isClosed) {
-        emit(onSuccess(result));
-      }
-    } catch (e, s) {
-      if (!isClosed) {
-        emit(onError(toFailure(e, s)));
-      }
-    }
-  }
+  }) => nexoExecute(
+    emit: emit,
+    isDone: isClosed,
+    action: action,
+    onLoading: onLoading,
+    onSuccess: onSuccess,
+    onError: onError,
+  );
 
   /// Выполняет асинхронную операцию, возвращающую [Result], и маппит результат.
-  ///
-  /// Аналогично [execute], но принимает [action], возвращающий [Result<T>].
-  /// Автоматически обрабатывает [Right] как успех и [Left] как ошибку.
-  ///
-  /// [action] — асинхронная операция, возвращающая [Result<T>].
-  /// [onLoading] — опциональное состояние загрузки.
-  /// [onSuccess] — функция маппинга успешного результата в состояние.
-  /// [onError] — функция маппинга ошибки [Failure] в состояние.
-  ///
-  /// **Возвращает:** [Future], который завершается после испускания конечного состояния.
-  ///
-  /// ## Пример
-  ///
-  /// ```dart
-  /// await executeEither(
-  ///   action: () => useCase(params),
-  ///   onLoading: () => State.loading(),
-  ///   onSuccess: (data) => State.loaded(data),
-  ///   onError: (failure) => State.error(failure),
-  /// );
-  /// ```
   Future<void> executeEither<T>({
     required Future<Result<T>> Function() action,
     S Function()? onLoading,
     required S Function(T data) onSuccess,
     required S Function(Failure failure) onError,
-  }) async {
-    if (onLoading != null && !isClosed) {
-      emit(onLoading());
-    }
-
-    try {
-      final result = await action();
-      if (!isClosed) {
-        result.fold(
-          onFailure: (failure) => emit(onError(failure)),
-          onSuccess: (data) => emit(onSuccess(data)),
-        );
-      }
-    } catch (e, s) {
-      if (!isClosed) {
-        emit(onError(toFailure(e, s)));
-      }
-    }
-  }
+  }) => nexoExecuteEither(
+    emit: emit,
+    isDone: isClosed,
+    action: action,
+    onLoading: onLoading,
+    onSuccess: onSuccess,
+    onError: onError,
+  );
 
   /// Подписывается на [Stream] с управлением подписками через [SubscriptionMixin].
-  ///
-  /// Подписка автоматически отменяется при повторном вызове с тем же [subscriptionKey]
-  /// (если [cancelPrevious] равен `true`). Используется для обработки потоковых данных.
-  ///
-  /// [subscriptionKey] — уникальный ключ подписки для идентификации и управления.
-  /// [stream] — функция, возвращающая подписываемый [Stream<T>].
-  /// [onLoading] — опциональное состояние загрузки.
-  /// [onData] — функция маппинга данных из потока в состояние.
-  /// [onError] — функция маппинга ошибки из потока в состояние.
-  /// [cancelPrevious] — если `true`, предыдущая подписка с тем же ключом будет отменена.
-  ///   По умолчанию: `true`.
-  ///
-  /// **Возвращает:** [Future], который завершается после подписки на поток.
-  ///
-  /// ## Пример
-  ///
-  /// ```dart
-  /// await subscribe(
-  ///   subscriptionKey: 'user_stream',
-  ///   stream: () => webSocketStream,
-  ///   onData: (message) => State.messageReceived(message),
-  ///   onError: (failure) => State.error(failure),
-  /// );
-  /// ```
   Future<void> subscribe<T>({
     required Object subscriptionKey,
     required Stream<T> Function() stream,
@@ -191,31 +109,6 @@ abstract class NexoCubit<S> extends Cubit<S>
   }
 
   /// Подписывается на [Stream<Result>] с управлением подписками.
-  ///
-  /// Аналогично [subscribe], но принимает поток, эмитящий [Result<T>].
-  /// Автоматически обрабатывает [Right] как данные и [Left] как ошибку.
-  /// Подписка автоматически отменяется при повторном вызове с тем же ключом.
-  ///
-  /// [subscriptionKey] — уникальный ключ подписки.
-  /// [stream] — функция, возвращающая подписываемый [Stream<Result<T>>].
-  /// [onLoading] — опциональное состояние загрузки.
-  /// [onData] — функция маппинга данных из [Result] в состояние.
-  /// [onError] — функция маппинга ошибки [Failure] в состояние.
-  /// [cancelPrevious] — если `true`, предыдущая подписка с тем же ключом будет отменена.
-  ///   По умолчанию: `true`.
-  ///
-  /// **Возвращает:** [Future], который завершается после подписки на поток.
-  ///
-  /// ## Пример
-  ///
-  /// ```dart
-  /// await subscribeEither(
-  ///   subscriptionKey: 'data_stream',
-  ///   stream: () => dataSource.watchData(),
-  ///   onData: (data) => State.loaded(data),
-  ///   onError: (failure) => State.error(failure),
-  /// );
-  /// ```
   Future<void> subscribeEither<T>({
     required Object subscriptionKey,
     required Stream<Result<T>> Function() stream,
@@ -258,9 +151,6 @@ abstract class NexoCubit<S> extends Cubit<S>
   }
 
   /// Закрывает Cubit и отменяет все активные подписки.
-  ///
-  /// Вызывается автоматически при уничтожении Cubit.
-  /// Отменяет все подписки, управляемые через [SubscriptionMixin].
   @override
   Future<void> close() async {
     await cancelSubscriptions();

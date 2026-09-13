@@ -8,9 +8,9 @@ import 'failure_sub_mapper.dart';
 ///
 /// Преобразует ошибки Isar (нарушение схемы, уникальности, транзакций,
 /// повреждение БД, нехватка места и т.д.) в соответствующие [Failure].
-/// Определяет тип ошибки по ключевым словам в сообщении исключения.
+/// Определяет тип ошибки по stackTrace и ключевым словам в сообщении.
 ///
-/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper].
+/// Используется в цепочке [FailureSubMapper] как часть [FailureMapper2].
 ///
 /// См. также: [FailureSubMapper], [CommonFailureMapper].
 final class IsarFailureMapper implements FailureSubMapper {
@@ -18,7 +18,7 @@ final class IsarFailureMapper implements FailureSubMapper {
 
   /// Пытается преобразовать [error] в [Failure], если это ошибка Isar.
   ///
-  /// Анализирует тип и сообщение ошибки для определения категории:
+  /// Анализирует stackTrace и сообщение ошибки для определения категории:
   /// - Нарушение схемы → [ParseFailure.schemaMismatch]
   /// - Нарушение уникальности → [DatabaseFailure.uniqueConstraintViolation]
   /// - Ошибка транзакции → [DatabaseFailure.transactionFailed]
@@ -27,13 +27,19 @@ final class IsarFailureMapper implements FailureSubMapper {
   /// **Возвращает:** [Failure] или `null`, если ошибка не является ошибкой Isar.
   @override
   Failure? tryMap(Object error, [StackTrace? stackTrace]) {
-    final runtime = error.runtimeType.toString().toLowerCase();
-    final text = error.toString().toLowerCase();
+    final traceStr = stackTrace?.toString() ?? '';
+    final errorStr = error.toString();
 
-    final looksLikeIsar = runtime.contains('isar') || text.contains('isar');
-    if (!looksLikeIsar) return null;
+    // Проверяем по stackTrace — есть ли package:isar в frame
+    final isIsarError =
+        traceStr.contains('package:isar') ||
+        errorStr.contains('IsarError') ||
+        errorStr.contains('IsarImpl') ||
+        errorStr.contains('IsarCollection');
 
-    if (_containsAny(text, const [
+    if (!isIsarError) return null;
+
+    if (_containsAny(errorStr, const [
       'schema',
       'serialization',
       'deserialize',
@@ -43,13 +49,17 @@ final class IsarFailureMapper implements FailureSubMapper {
       return const Failure.parse(type: ParseFailure.schemaMismatch);
     }
 
-    if (_containsAny(text, const ['unique', 'duplicate', 'already exists'])) {
+    if (_containsAny(errorStr, const [
+      'unique',
+      'duplicate',
+      'already exists',
+    ])) {
       return const Failure.database(
         type: DatabaseFailure.uniqueConstraintViolation,
       );
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'transaction',
       'txn',
       'write txn',
@@ -58,27 +68,27 @@ final class IsarFailureMapper implements FailureSubMapper {
       return const Failure.database(type: DatabaseFailure.transactionFailed);
     }
 
-    if (_containsAny(text, const ['not found', 'object not found'])) {
+    if (_containsAny(errorStr, const ['not found', 'object not found'])) {
       return const Failure.database(type: DatabaseFailure.notFound);
     }
 
-    if (_containsAny(text, const ['corrupt', 'corrupted', 'damaged'])) {
+    if (_containsAny(errorStr, const ['corrupt', 'corrupted', 'damaged'])) {
       return const Failure.database(type: DatabaseFailure.corrupted);
     }
 
-    if (_containsAny(text, const ['disk full', 'no space left'])) {
+    if (_containsAny(errorStr, const ['disk full', 'no space left'])) {
       return const Failure.storage(type: StorageFailure.outOfSpace);
     }
 
-    if (_containsAny(text, const ['timeout', 'timed out'])) {
+    if (_containsAny(errorStr, const ['timeout', 'timed out'])) {
       return const Failure.database(type: DatabaseFailure.queryTimeout);
     }
 
-    if (_containsAny(text, const ['read', 'query', 'find', 'get'])) {
+    if (_containsAny(errorStr, const ['read', 'query', 'find', 'get'])) {
       return const Failure.database(type: DatabaseFailure.readError);
     }
 
-    if (_containsAny(text, const [
+    if (_containsAny(errorStr, const [
       'write',
       'put',
       'insert',
@@ -88,11 +98,11 @@ final class IsarFailureMapper implements FailureSubMapper {
       return const Failure.database(type: DatabaseFailure.writeError);
     }
 
-    if (_containsAny(text, const ['update', 'modify'])) {
+    if (_containsAny(errorStr, const ['update', 'modify'])) {
       return const Failure.database(type: DatabaseFailure.updateError);
     }
 
-    if (_containsAny(text, const ['delete', 'remove'])) {
+    if (_containsAny(errorStr, const ['delete', 'remove'])) {
       return const Failure.database(type: DatabaseFailure.deleteError);
     }
 

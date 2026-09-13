@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.0.6-beta.0
+
+### nexo_core — новые абстракции
+
+- **`NexoAdminCrudBloc<T>`** — generic CRUD BLoC для админ-панелей:
+  - Интерфейс `NexoAdminRepository<T>` с методами `list`, `create`, `delete`.
+  - Автоматические обработчики: `LoadCrudData`, `SearchCrudData`, `CreateCrudEntity`, `DeleteCrudEntity`.
+  - `executeMutation()` — обёртка над try/catch для мутаций с чтением текущего state.
+  - `NexoCrudState<T>` — sealed-состояние: `NexoCrudLoading`, `NexoCrudReady`, `NexoCrudError`.
+
+- **`NexoPaginatedMixin<T, Cursor>`** — миксин для cursor-based пагинации:
+  - Инкапсулирует `PaginationController`, предоставляет `loadMore(emit, loader, onReady)`.
+  - Автоматический emit loading/ready/error, guard от параллельных загрузок.
+  - Convenience-геттеры: `paginatedItems`, `nextCursor`, `hasMore`, `isPaginatedLoading`.
+
+- **`@NexoUseCaseAnnotation`** — аннотация для codegen UseCase:
+  - Параметры: `repo: Type`, `extraDeps: [Type]`.
+  - Генерирует `@injectable` implementation с constructor + `@override execute`.
+  - Интеграция с `build_runner` через `source_gen`.
+
+### nexo_errors — FailureMapper 2.0
+
+- **`FailureMapper2`** — расширяемый маппер ошибок с поддержкой DI:
+  - `register(mapper)` / `registerAll(mappers)` — регистрация кастомных мапперов.
+  - Кастомные мапперы имеют приоритет над встроенными.
+  - `fromStatic()` для обратной совместимости.
+  - `FailureMapper` помечен `@Deprecated('Используйте FailureMapper2')`.
+
+- **`DomainExceptionFailureMapper`** — добавлен параметр `extraMappings`:
+  - `Map<Type, Failure Function(Object)>` — кастомные маппинги для исключений приложения.
+  - Позволяет расширять маппер без модификации исходного кода nexo.
+
+- **Улучшены Hive/Isar/Drift мапперы** — заменён текстовый хевристик на stackTrace:
+  - `HiveFailureMapper`: проверка `traceStr.contains('package:hive')` вместо `runtimeType`.
+  - `IsarFailureMapper`: проверка `traceStr.contains('package:isar')`.
+  - `DriftFailureMapper`: проверка `traceStr.contains('package:drift')`.
+
+### nexo_cli — новые флаги
+
+- **`--admin-crud`** — генерирует фичу с `NexoAdminCrudBloc` (implies `--bloc`).
+- **`--usecase-gen`** — генерирует `@NexoUseCaseAnnotation` abstract class.
+- **`--paginated`** — генерирует BLoC с `NexoPaginatedMixin`.
+
+### Зависимости
+
+- Добавлена dev-зависимость `source_gen: ^4.2.4` для codegen.
+
 ## 0.0.5-beta.0
 
 - **Breaking**: `Result<T>` — собственный sealed-тип вместо `Either<Failure, T>` из dartz:

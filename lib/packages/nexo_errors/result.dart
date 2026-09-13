@@ -104,3 +104,18 @@ final class Left<T> extends Result<T> {
 
 /// Поток результатов с тем же смыслом, что и [Result].
 typedef StreamResult<T> = Stream<Result<T>>;
+
+/// Удобные расширения для [Future<Result<T>]].
+extension ResultFutureX<T> on Future<Result<T>> {
+  /// Вызывает [action] при успехе.
+  Future<void> onSuccess(void Function(T data) action) async {
+    final r = await this;
+    if (r case Right(:final value)) action(value);
+  }
+
+  /// Вызывает [action] при ошибке.
+  Future<void> onFailure(void Function(Failure failure) action) async {
+    final r = await this;
+    if (r case Left(:final failure)) action(failure);
+  }
+}

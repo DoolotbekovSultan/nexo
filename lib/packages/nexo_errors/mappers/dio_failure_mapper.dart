@@ -8,6 +8,7 @@ import '../types/parse_failure.dart';
 import '../types/validation_failure.dart';
 import 'failure_sub_mapper.dart';
 import 'platform_exceptions.dart';
+import 'socket_failure_mapper.dart';
 
 /// Ключ `RequestOptions.extra`, под которым `NexoRequestIdInterceptor`
 /// сохраняет идентификатор запроса; [DioFailureMapper] читает его оттуда.
@@ -85,7 +86,7 @@ final class DioFailureMapper implements FailureSubMapper {
 
         final raw = '${error.message} ${inner ?? ''}'.toLowerCase();
 
-        if (_containsAny(raw, const [
+        if (raw.containsAny(const [
           'dns',
           'failed host lookup',
           'name or service not known',
@@ -93,18 +94,18 @@ final class DioFailureMapper implements FailureSubMapper {
           return const Failure.network(type: NetworkFailure.dnsLookupFailed);
         }
 
-        if (_containsAny(raw, const ['connection refused'])) {
+        if (raw.containsAny(const ['connection refused'])) {
           return const Failure.network(type: NetworkFailure.connectionRefused);
         }
 
-        if (_containsAny(raw, const [
+        if (raw.containsAny(const [
           'connection reset',
           'connection reset by peer',
         ])) {
           return const Failure.network(type: NetworkFailure.connectionReset);
         }
 
-        if (_containsAny(raw, const ['proxy'])) {
+        if (raw.containsAny(const ['proxy'])) {
           return const Failure.network(type: NetworkFailure.proxyError);
         }
 
@@ -134,7 +135,7 @@ final class DioFailureMapper implements FailureSubMapper {
 
         final raw = '${error.message} ${inner ?? ''}'.toLowerCase();
 
-        if (_containsAny(raw, const ['timed out', 'timeout'])) {
+        if (raw.containsAny(const ['timed out', 'timeout'])) {
           return const Failure.network(type: NetworkFailure.timeout);
         }
 
@@ -190,52 +191,8 @@ final class DioFailureMapper implements FailureSubMapper {
   }
 
   /// Преобразует текстовое сообщение сокет-ошибки в [Failure].
-  ///
-  /// Анализирует ключевые слова для определения типа сети: timeout, DNS,
-  /// connection refused, host unreachable, connection reset, proxy.
-  Failure _mapSocketMessage(String? socketMessage) {
-    final message = socketMessage?.toLowerCase() ?? '';
-
-    if (_containsAny(message, const ['timed out', 'timeout'])) {
-      return const Failure.network(type: NetworkFailure.timeout);
-    }
-
-    if (_containsAny(message, const [
-      'failed host lookup',
-      'name or service not known',
-      'temporary failure in name resolution',
-      'dns',
-    ])) {
-      return const Failure.network(type: NetworkFailure.dnsLookupFailed);
-    }
-
-    if (_containsAny(message, const ['connection refused'])) {
-      return const Failure.network(type: NetworkFailure.connectionRefused);
-    }
-
-    if (_containsAny(message, const [
-      'no route to host',
-      'host is down',
-      'network is unreachable',
-      'host unreachable',
-    ])) {
-      return const Failure.network(type: NetworkFailure.hostUnreachable);
-    }
-
-    if (_containsAny(message, const [
-      'connection reset',
-      'connection reset by peer',
-      'broken pipe',
-    ])) {
-      return const Failure.network(type: NetworkFailure.connectionReset);
-    }
-
-    if (_containsAny(message, const ['proxy'])) {
-      return const Failure.network(type: NetworkFailure.proxyError);
-    }
-
-    return const Failure.network(type: NetworkFailure.noInternet);
-  }
+  Failure _mapSocketMessage(String? socketMessage) =>
+      Failure.network(type: mapSocketMessageToNetworkFailure(socketMessage));
 
   /// Преобразует HTTP-код статуса в соответствующий [HttpFailure].
   ///
@@ -287,82 +244,47 @@ final class DioFailureMapper implements FailureSubMapper {
     };
   }
 
+  /// Коды ошибок авторизации → [AuthFailure].
+  static const _authCodeMap = <String, AuthFailure>{
+    'token_expired': AuthFailure.tokenExpired,
+    'access_token_expired': AuthFailure.tokenExpired,
+    'token_invalid': AuthFailure.tokenInvalid,
+    'invalid_token': AuthFailure.tokenInvalid,
+    'refresh_token_expired': AuthFailure.refreshTokenExpired,
+    'refresh_token_invalid': AuthFailure.refreshTokenInvalid,
+    'session_revoked': AuthFailure.sessionRevoked,
+    'session_not_found': AuthFailure.sessionNotFound,
+    'wrong_credentials': AuthFailure.wrongCredentials,
+    'invalid_credentials': AuthFailure.wrongCredentials,
+    'account_blocked': AuthFailure.accountBlocked,
+    'temporarily_locked': AuthFailure.accountTemporarilyLocked,
+    'account_locked': AuthFailure.accountTemporarilyLocked,
+    'account_not_verified': AuthFailure.accountNotVerified,
+    'account_deleted': AuthFailure.accountDeleted,
+    'account_not_found': AuthFailure.accountNotFound,
+    'user_not_found': AuthFailure.accountNotFound,
+    'account_already_exists': AuthFailure.accountAlreadyExists,
+    'already_exists': AuthFailure.accountAlreadyExists,
+    'password_expired': AuthFailure.passwordExpired,
+    '2fa_required': AuthFailure.twoFactorRequired,
+    'two_factor_required': AuthFailure.twoFactorRequired,
+    '2fa_failed': AuthFailure.twoFactorFailed,
+    'two_factor_failed': AuthFailure.twoFactorFailed,
+    '2fa_expired': AuthFailure.twoFactorExpired,
+    'two_factor_expired': AuthFailure.twoFactorExpired,
+    'oauth_failed': AuthFailure.oauthFailed,
+    'oauth_denied': AuthFailure.oauthDenied,
+    'oauth_token_invalid': AuthFailure.oauthTokenInvalid,
+    'oauth_account_not_linked': AuthFailure.oauthAccountNotLinked,
+  };
+
   /// Извлекает [AuthFailure] из тела ответа по полю `code` / `errorCode`.
-  ///
-  /// Анализирует строковый код ошибки из JSON-ответа сервера и маппит его
-  /// на конкретный [AuthFailure] (tokenExpired, wrongCredentials и т.д.).
   AuthFailure? _extractAuthFailure(dynamic data) {
     final code = _extractErrorCode(data)?.toLowerCase();
     if (code == null) return null;
 
-    if (_containsAny(code, const ['token_expired', 'access_token_expired'])) {
-      return AuthFailure.tokenExpired;
-    }
-    if (_containsAny(code, const ['token_invalid', 'invalid_token'])) {
-      return AuthFailure.tokenInvalid;
-    }
-    if (_containsAny(code, const ['refresh_token_expired'])) {
-      return AuthFailure.refreshTokenExpired;
-    }
-    if (_containsAny(code, const ['refresh_token_invalid'])) {
-      return AuthFailure.refreshTokenInvalid;
-    }
-    if (_containsAny(code, const ['session_revoked'])) {
-      return AuthFailure.sessionRevoked;
-    }
-    if (_containsAny(code, const ['session_not_found'])) {
-      return AuthFailure.sessionNotFound;
-    }
-    if (_containsAny(code, const [
-      'wrong_credentials',
-      'invalid_credentials',
-    ])) {
-      return AuthFailure.wrongCredentials;
-    }
-    if (_containsAny(code, const ['account_blocked'])) {
-      return AuthFailure.accountBlocked;
-    }
-    if (_containsAny(code, const ['temporarily_locked', 'account_locked'])) {
-      return AuthFailure.accountTemporarilyLocked;
-    }
-    if (_containsAny(code, const ['account_not_verified'])) {
-      return AuthFailure.accountNotVerified;
-    }
-    if (_containsAny(code, const ['account_deleted'])) {
-      return AuthFailure.accountDeleted;
-    }
-    if (_containsAny(code, const ['account_not_found', 'user_not_found'])) {
-      return AuthFailure.accountNotFound;
-    }
-    if (_containsAny(code, const [
-      'account_already_exists',
-      'already_exists',
-    ])) {
-      return AuthFailure.accountAlreadyExists;
-    }
-    if (_containsAny(code, const ['password_expired'])) {
-      return AuthFailure.passwordExpired;
-    }
-    if (_containsAny(code, const ['2fa_required', 'two_factor_required'])) {
-      return AuthFailure.twoFactorRequired;
-    }
-    if (_containsAny(code, const ['2fa_failed', 'two_factor_failed'])) {
-      return AuthFailure.twoFactorFailed;
-    }
-    if (_containsAny(code, const ['2fa_expired', 'two_factor_expired'])) {
-      return AuthFailure.twoFactorExpired;
-    }
-    if (_containsAny(code, const ['oauth_failed'])) {
-      return AuthFailure.oauthFailed;
-    }
-    if (_containsAny(code, const ['oauth_denied'])) {
-      return AuthFailure.oauthDenied;
-    }
-    if (_containsAny(code, const ['oauth_token_invalid'])) {
-      return AuthFailure.oauthTokenInvalid;
-    }
-    if (_containsAny(code, const ['oauth_account_not_linked'])) {
-      return AuthFailure.oauthAccountNotLinked;
+    for (final entry in _authCodeMap.entries) {
+      if (code.contains(entry.key)) return entry.value;
     }
 
     return null;
@@ -421,39 +343,20 @@ final class DioFailureMapper implements FailureSubMapper {
   }
 
   /// Извлекает ошибки валидации по полям из тела ответа.
-  ///
-  /// Проверяет поля `errors`, `fieldErrors`, `field_errors` в JSON-ответе.
-  /// Поддерживает форматы: `Map<String, List<String>>`, `Map<String, Map>` и
-  /// плоские значения.
   Map<String, List<String>> _extractFieldErrors(dynamic data) {
     if (data is! Map<String, dynamic>) return const {};
 
     final raw = data['errors'] ?? data['fieldErrors'] ?? data['field_errors'];
     if (raw is! Map) return const {};
 
-    final result = <String, List<String>>{};
-
-    for (final entry in raw.entries) {
-      final key = entry.key.toString();
-      final value = entry.value;
-
-      if (value is List) {
-        result[key] = value.map((e) => e.toString()).toList();
-      } else if (value is Map) {
-        result[key] = value.values.map((e) => e.toString()).toList();
-      } else if (value != null) {
-        result[key] = [value.toString()];
-      }
-    }
-
-    return result;
-  }
-
-  /// Проверяет, содержит ли [source] хотя бы одну строку из [patterns].
-  bool _containsAny(String source, List<String> patterns) {
-    for (final pattern in patterns) {
-      if (source.contains(pattern)) return true;
-    }
-    return false;
+    return {
+      for (final entry in raw.entries)
+        if (entry.value != null)
+          entry.key.toString(): switch (entry.value) {
+            List l => l.map((e) => e.toString()).toList(),
+            Map m => m.values.map((e) => e.toString()).toList(),
+            _ => [entry.value.toString()],
+          },
+    };
   }
 }

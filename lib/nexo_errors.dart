@@ -6,6 +6,7 @@ export 'package:nexo/packages/nexo_errors/failure.dart';
 export 'package:nexo/packages/nexo_errors/failure_codes.dart';
 export 'package:nexo/packages/nexo_errors/failure_presenter.dart';
 export 'package:nexo/packages/nexo_errors/failure_mapper.dart';
+export 'package:nexo/packages/nexo_errors/failure_mapper_2.dart';
 export 'package:nexo/packages/nexo_errors/failure_mapper_extension.dart';
 export 'package:nexo/packages/nexo_errors/nexo_crash_reporter.dart';
 export 'package:nexo/packages/nexo_errors/nexo_flutter_errors.dart';
@@ -24,6 +25,7 @@ export 'package:nexo/packages/nexo_errors/mappers/firebase_messaging_failure_map
 export 'package:nexo/packages/nexo_errors/mappers/hive_failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/mappers/isar_failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/mappers/platform_failure_mapper.dart';
+export 'package:nexo/packages/nexo_errors/mappers/socket_failure_mapper.dart';
 export 'package:nexo/packages/nexo_errors/types/auth_failure.dart';
 export 'package:nexo/packages/nexo_errors/types/cache_failure.dart';
 export 'package:nexo/packages/nexo_errors/types/database_failure.dart';

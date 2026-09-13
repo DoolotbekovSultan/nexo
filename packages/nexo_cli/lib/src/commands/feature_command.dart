@@ -103,6 +103,25 @@ class FeatureCommand extends Command<int> {
       ..addFlag('delete', negatable: false, help: 'Generate delete use case.')
       // ── Nexo features ──
       ..addFlag(
+        'admin-crud',
+        negatable: false,
+        help:
+            'Generate NexoAdminCrudBloc with generic CRUD operations. '
+            'Implies --bloc and --injectable.',
+      )
+      ..addFlag(
+        'usecase-gen',
+        negatable: false,
+        help:
+            'Generate @NexoUseCase abstract class instead of manual UseCase.',
+      )
+      ..addFlag(
+        'paginated',
+        negatable: false,
+        help:
+            'Generate BLoC with NexoPaginatedMixin for cursor-based pagination.',
+      )
+      ..addFlag(
         'pagination',
         negatable: false,
         help: 'Generate paginated list with PaginationController.',
@@ -209,9 +228,22 @@ class FeatureCommand extends Command<int> {
       return 64;
     }
 
+    // Validate --admin-crud flag.
+    final adminCrud = argResults!.flag('admin-crud');
+    if (adminCrud) {
+      if (cubit || asyncCubit || listCubit) {
+        stderr.writeln(
+          '--admin-crud is only compatible with --bloc.',
+        );
+        stderr.writeln();
+        stderr.writeln(usage);
+        return 64;
+      }
+    }
+
     // Default to cubit if no style chosen and not presentation-only.
     final effectiveCubit = !presentationOnly && styleCount == 0;
-    final style = switch ((bloc, asyncCubit, listCubit, effectiveCubit)) {
+    final style = switch ((bloc || adminCrud, asyncCubit, listCubit, effectiveCubit)) {
       (true, _, _, _) => PresentationStyle.bloc,
       (_, true, _, _) => PresentationStyle.asyncCubit,
       (_, _, true, _) => PresentationStyle.listCubit,
@@ -295,6 +327,9 @@ class FeatureCommand extends Command<int> {
       validators: argResults!.flag('validators'),
       localStorage: localStorage,
       getById: argResults!.flag('get-by-id'),
+      adminCrud: argResults!.flag('admin-crud'),
+      usecaseGen: argResults!.flag('usecase-gen'),
+      paginated: argResults!.flag('paginated'),
     );
 
     stdout.writeln('Planned feature: ${names.snakeCase}');
@@ -325,6 +360,9 @@ class FeatureCommand extends Command<int> {
     stdout.writeln('  optimistic: ${options.optimistic}');
     stdout.writeln('  validators: ${options.validators}');
     stdout.writeln('  get-by-id: ${options.getById}');
+    stdout.writeln('  admin-crud: ${options.adminCrud}');
+    stdout.writeln('  usecase-gen: ${options.usecaseGen}');
+    stdout.writeln('  paginated: ${options.paginated}');
     if (jsonFields != null) {
       stdout.writeln('  json fields: ${jsonFields.length} fields');
     }
