@@ -67,6 +67,76 @@ sealed class Result<T> {
     Left<T>(:final failure) => orElse(failure),
   };
 
+  /// Значение при успехе, иначе [defaultValue].
+  ///
+  /// ```dart
+  /// final items = result.orElse((_) => <Item>[]);
+  /// ```
+  T orElse(T Function(Failure failure) defaultValue) => switch (this) {
+    Right<T>(:final value) => value,
+    Left<T>(:final failure) => defaultValue(failure),
+  };
+
+  /// Side-effect без трансформации. Возвращает исходный Result.
+  ///
+  /// ```dart
+  /// result.tap(
+  ///   onSuccess: (data) => logger.info('Loaded: ${data.length}'),
+  ///   onFailure: (f) => logger.error(f.userMessage),
+  /// );
+  /// ```
+  Result<T> tap({
+    void Function(T value)? onSuccess,
+    void Function(Failure failure)? onFailure,
+  }) {
+    switch (this) {
+      case Right(:final value):
+        onSuccess?.call(value);
+      case Left(:final failure):
+        onFailure?.call(failure);
+    }
+    return this;
+  }
+
+  /// Трансформирует только Failure.
+  ///
+  /// ```dart
+  /// final mapped = result.mapFailure((f) => Failure.network(type: NetworkFailure.timeout));
+  /// ```
+  Result<T> mapFailure(Failure Function(Failure failure) mapper) =>
+      switch (this) {
+        Right<T>() => this,
+        Left(:final failure) => Left(mapper(failure)),
+      };
+
+  /// Chaining: если success — применяет [f], если failure — пропускает.
+  ///
+  /// ```dart
+  /// final names = result
+  ///   .flatMap((items) => Right(items.map((e) => e.name).toList()))
+  ///   .orElse((_) => <String>[]);
+  /// ```
+  Result<R> flatMap<R>(Result<R> Function(T value) f) => switch (this) {
+    Right(:final value) => f(value),
+    Left(:final failure) => Left(failure),
+  };
+
+  /// Паттерн-матчинг без fold.
+  ///
+  /// ```dart
+  /// final message = result.when(
+  ///   success: (data) => 'Loaded: $data',
+  ///   failure: (f) => f.userMessage,
+  /// );
+  /// ```
+  R when<R>({
+    required R Function(T value) success,
+    required R Function(Failure failure) onFailure,
+  }) => switch (this) {
+    Right(:final value) => success(value),
+    Left(:final failure) => onFailure(failure),
+  };
+
   @override
   String toString() => switch (this) {
     Right<T>(:final value) => 'Right($value)',

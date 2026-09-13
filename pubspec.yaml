@@ -1,5 +1,5 @@
 name: nexo
-version: 0.0.6-beta.0
+version: 0.0.7-beta.0
 repository: https://github.com/DoolotbekovSultan/nexo
 documentation: https://github.com/DoolotbekovSultan/nexo/blob/main/doc/README.md
 description: Reusable architecture, error handling, and logging utilities for Flutter apps.

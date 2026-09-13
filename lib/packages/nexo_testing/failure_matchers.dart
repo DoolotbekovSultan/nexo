@@ -12,3 +12,10 @@ Matcher failureWithCode(String code) =>
 /// Матчер: ошибка с ожидаемым пользовательским сообщением ([Failure.userMessage]).
 Matcher failureWithUserMessage(String message) =>
     isA<Failure>().having((f) => f.userMessage, 'userMessage', message);
+
+/// Матчер: ошибка с ожидаемым типом.
+///
+/// ```dart
+/// expect(failure, failureWithType<NetworkAppFailure>());
+/// ```
+Matcher failureWithType<T>() => isA<T>();

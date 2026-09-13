@@ -1,5 +1,5 @@
 name: nexo_generator
-version: 0.0.6-beta.0
+version: 0.0.7-beta.0
 description: Code generator for nexo package. Generates UseCase implementations from @NexoUseCaseAnnotation.
 repository: https://github.com/DoolotbekovSultan/nexo
 

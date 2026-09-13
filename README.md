@@ -4,7 +4,7 @@
 
 Modular toolkit for Flutter apps: **UseCase** layer, sealed **`Result`**, unified **`Failure`** model with mapping and localization, ready-made **`NexoAsyncCubit`** and state widgets, offline mutation queue (**outbox**), form validators, **Bloc/Cubit** wrappers, **Dio** (client and interceptors), base **data sources**, **breadcrumbs** for crash reports, and **logging**.
 
-**Version:** `0.0.6-beta.0`  
+**Version:** `0.0.7-beta.0`  
 **SDK:** Dart `^3.11.3`, Flutter `>=1.17.0`
 
 ## Installation
@@ -79,6 +79,7 @@ Custom catalog: implement `FailureUserMessageCatalog` and return strings from `f
     Left(:final failure) => failure.userMessage,
   };
   ```
+  Convenience methods: `orElse`, `tap`, `mapFailure`, `flatMap`, `when`.
 - **`Failure.code`** — stable string (`network.no_internet`, `http.unauthorized`) for Sentry, logs and backend; network/HTTP errors automatically receive **`requestId`** from `x-request-id`.
 - **`NexoAsyncState<T>`** — sealed: `NexoAsyncIdle` / `NexoAsyncLoading` / `NexoAsyncSuccess` / `NexoAsyncFailure`; getters `isIdle`, `isLoading`, … and `dataOrNull`, `failureOrNull`.
 - **`NexoUseCase.callWithRetry`** — retry with exponential backoff via `retryIf` or `Failure.isRetryable`.
@@ -144,6 +145,8 @@ Sub-mappers (order in `FailureMapper2`): domain exceptions (с `extraMappings`),
 - **`NexoBloc<Event, State>`** / **`NexoCubit<State>`** — base classes with **`FailureSupport`**.
 - Methods:
   - **`execute`** / **`executeEither`** — async action with optional loading, success, error.
+  - **`executeMutation`** — обёртка для мутаций (create/update/delete) с чтением текущего state.
+  - **`loadData<T>()`** — упрощённая загрузка данных с автоматическим loading/success/error.
   - **`subscribe`** / **`subscribeEither`** — stream subscription with error mapping to `Failure`.
 - **`NexoCubit`** additionally: **`SubscriptionMixin`**, keyed subscription cancellation, `close` cancels subscriptions.
 - **`NexoBlocObserver`** — `BlocObserver` with lifecycle / events / changes / errors logging via `NexoLogger`, `shouldLogBloc` filter, log truncation; bloc errors are automatically written to crash-reporter breadcrumbs.

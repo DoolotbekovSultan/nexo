@@ -150,6 +150,72 @@ abstract class NexoCubit<S> extends Cubit<S>
     }
   }
 
+  /// Выполняет мутацию (create/update/delete) с обработкой ошибок.
+  ///
+  /// В отличие от [execute], не создаёт новый State — вызывает [onSuccess]
+  /// или [onError], которые модифицируют текущий state.
+  ///
+  /// ```dart
+  /// await executeMutation(
+  ///   action: () => _repository.create(_token, payload),
+  ///   onSuccess: () {
+  ///     _emitReady(feedback: feedback('Создано'));
+  ///     load();
+  ///   },
+  ///   onError: (f) {
+  ///     _emitReady(feedback: feedback(f.userMessage, isError: true));
+  ///   },
+  /// );
+  /// ```
+  Future<void> executeMutation({
+    required Future<void> Function() action,
+    required void Function() onSuccess,
+    required void Function(Failure failure) onError,
+  }) async {
+    try {
+      await action();
+      onSuccess();
+    } on Failure catch (f) {
+      onError(f);
+    } catch (e, s) {
+      onError(toFailure(e, s));
+    }
+  }
+
+  /// Загружает данные с автоматическим loading/success/error.
+  ///
+  /// Упрощённая версия [executeEither] — принимает только
+  /// [action], [toState] и [toError].
+  ///
+  /// ```dart
+  /// await loadData<HomeFeedEntity>(
+  ///   action: () => _loadFilmsUseCase(const NoParams()),
+  ///   toState: (data) => State.ready(data: data),
+  ///   toError: (f) => State.error(failure: f),
+  ///   onLoading: () => const State.loading(),
+  /// );
+  /// ```
+  Future<void> loadData<T>({
+    required Future<T> Function() action,
+    required S Function(T data) toState,
+    required S Function(Failure failure) toError,
+    S Function()? onLoading,
+  }) async {
+    if (onLoading != null && !isClosed) {
+      emit(onLoading());
+    }
+    try {
+      final result = await action();
+      if (!isClosed) {
+        emit(toState(result));
+      }
+    } catch (e, s) {
+      if (!isClosed) {
+        emit(toError(toFailure(e, s)));
+      }
+    }
+  }
+
   /// Закрывает Cubit и отменяет все активные подписки.
   @override
   Future<void> close() async {

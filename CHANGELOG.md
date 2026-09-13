@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.0.7-beta.0
+
+### nexo_core — BLoC/Cubit улучшения
+
+- **`executeMutation()`** — обёртка для мутаций (create/update/delete) в `NexoBloc` и `NexoCubit`:
+  ```dart
+  await executeMutation(
+    emit: emit,
+    action: () => _repository.create(_token, payload),
+    onSuccess: () { _emitReady(emit, feedback: 'Создано'); },
+    onError: (f) { _emitReady(emit, feedback: f.userMessage); },
+  );
+  ```
+
+- **`loadData<T>()`** — упрощённая загрузка данных в `NexoBloc` и `NexoCubit`:
+  ```dart
+  await loadData<User>(
+    emit: emit,
+    action: () => _getUserUseCase(id),
+    toState: (data) => State.ready(data: data),
+    toError: (f) => State.error(failure: f),
+    onLoading: () => const State.loading(),
+  );
+  ```
+
+### nexo_errors — Result convenience methods
+
+- **`orElse(fn)`** — значение при успехе, иначе дефолт.
+- **`tap(onSuccess:, onFailure:)`** — side-effect без трансформации.
+- **`mapFailure(fn)`** — трансформация только Failure.
+- **`flatMap(fn)`** — chaining: если success — применяет fn.
+- **`when(success:, onFailure:)`** — паттерн-матчинг без fold.
+
+### nexo_core — NexoValidators расширение
+
+- **`hasUpperAndDigit()`** — проверка заглавной буквы и цифры.
+- **`hasSpecialChar()`** — проверка спецсимвола.
+- **`matches(pattern)`** — проверка по regex.
+- **`matchesField(other)`** — зависимая валидация (совпадение полей).
+
+### nexo_testing — новые матчеры
+
+- **`isRight()` / `isLeft()`** — алиасы для `isSuccess`/`isFailure`.
+- **`hasFailureCode()` / `hasFailureMessage()` / `hasFailureType()`** — матчеры для Failure.
+- **`resultContains()`** — проверка значения в Result.
+
 ## 0.0.6-beta.0
 
 ### nexo_core — новые абстракции

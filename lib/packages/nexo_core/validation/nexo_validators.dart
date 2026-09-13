@@ -150,6 +150,80 @@ abstract final class NexoValidators {
         return null;
       };
 
+  /// Проверяет наличие заглавной буквы и цифры; пустое значение пропускает.
+  ///
+  /// ```dart
+  /// NexoValidators.hasUpperAndDigit(fieldName: 'Пароль')
+  /// ```
+  static NexoValidator<String> hasUpperAndDigit({
+    String? fieldName,
+    String? message,
+  }) => (value) {
+    final trimmed = (value ?? '').trim();
+    if (trimmed.isEmpty) return null;
+    final hasUpper = trimmed.contains(RegExp(r'[A-Z]'));
+    final hasDigit = trimmed.contains(RegExp(r'[0-9]'));
+    if (!hasUpper || !hasDigit) {
+      return message ??
+          '${fieldName ?? 'Значение'} должно содержать заглавную букву и цифру';
+    }
+    return null;
+  };
+
+  /// Проверяет наличие спецсимвола; пустое значение пропускает.
+  ///
+  /// ```dart
+  /// NexoValidators.hasSpecialChar(fieldName: 'Пароль')
+  /// ```
+  static NexoValidator<String> hasSpecialChar({
+    String? fieldName,
+    String? message,
+  }) => (value) {
+    final trimmed = (value ?? '').trim();
+    if (trimmed.isEmpty) return null;
+    if (!trimmed.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
+      return message ??
+          '${fieldName ?? 'Значение'} должно содержать спецсимвол';
+    }
+    return null;
+  };
+
+  /// Проверяет по regex; пустое значение пропускает.
+  ///
+  /// ```dart
+  /// NexoValidators.matches(RegExp(r'^[0-9]+$'), fieldName: 'Код')
+  /// ```
+  static NexoValidator<String> matches(
+    Pattern pattern, {
+    String? fieldName,
+    String? message,
+  }) => (value) {
+    final trimmed = (value ?? '').trim();
+    if (trimmed.isEmpty) return null;
+    if (!pattern.allMatches(trimmed).isNotEmpty) {
+      return message ?? '${fieldName ?? 'Значение'} имеет неверный формат';
+    }
+    return null;
+  };
+
+  /// Зависимая валидация: проверяет совпадение двух полей; пустое пропускает.
+  ///
+  /// ```dart
+  /// NexoValidators.matchesField(confirmPassword, fieldName: 'Пароль')
+  /// ```
+  static NexoValidator<String> matchesField(
+    String otherValue, {
+    String? fieldName,
+    String? message,
+  }) => (value) {
+    final trimmed = (value ?? '').trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed != otherValue) {
+      return message ?? '${fieldName ?? 'Значения'} не совпадают';
+    }
+    return null;
+  };
+
   static String _message(ValidationFailure type, {String? field}) =>
       Failure.validation(type: type, field: field).userMessage;
 }
