@@ -130,13 +130,13 @@ Sub-mappers (order in `FailureMapper2`): domain exceptions (с `extraMappings`),
 - **`NexoUseCase<T, Params>`** — abstract class with `execute` and `call`: `Future<Result<T>>`, logging (including **`failure.code`**), exception catching and mapping via `toFailure`.
 - **`NexoStreamUseCase<T, Params>`** — `build` returns `Stream<T>`; `call` gives `Stream<Result<T>>`.
 - **`NoParams`** — for parameterless use cases (see `no_params.dart`).
-- **`@NexoUseCaseAnnotation`** — codegen аннотация для генерации implementation:
+- **`@NexoUseCaseAnnotation`** — codegen аннотация для генерации implementation (генератор в `nexo_generator`):
   ```dart
   @NexoUseCaseAnnotation(repo: IUserRepository)
   abstract class GetUserUseCase {
     Future<User> execute(GetUserParams params);
   }
-  // Генерирует: @injectable class GetUserUseCaseImpl extends NexoUseCase<User, GetUserParams>
+  // dart run build_runner build -> @injectable class GetUserUseCaseImpl
   ```
 
 ### nexo_core — Bloc / Cubit

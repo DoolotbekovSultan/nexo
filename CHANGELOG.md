@@ -15,10 +15,7 @@
   - Автоматический emit loading/ready/error, guard от параллельных загрузок.
   - Convenience-геттеры: `paginatedItems`, `nextCursor`, `hasMore`, `isPaginatedLoading`.
 
-- **`@NexoUseCaseAnnotation`** — аннотация для codegen UseCase:
-  - Параметры: `repo: Type`, `extraDeps: [Type]`.
-  - Генерирует `@injectable` implementation с constructor + `@override execute`.
-  - Интеграция с `build_runner` через `source_gen`.
+- **`@NexoUseCaseAnnotation`** — аннотация для codegen UseCase (генератор в отдельном пакете `nexo_generator`).
 
 ### nexo_errors — FailureMapper 2.0
 

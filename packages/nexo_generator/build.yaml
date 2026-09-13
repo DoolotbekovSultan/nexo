@@ -1,0 +1,5 @@
+targets:
+  $default:
+    builders:
+      nexo_generator|nexo_usecase:
+        enabled: true
