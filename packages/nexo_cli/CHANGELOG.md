@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2
+
+- Updated admin CRUD templates to match nexo 0.0.8-beta.0:
+  - `NexoAdminCrudBloc<T, F>` with generic feedback type.
+  - `NexoCrudState<T, F>` with generic feedback.
+  - Generated blocs now implement `buildSuccessFeedback` and `buildErrorFeedback`.
+
 ## 0.3.1
 
 - Migrated to Dart 3.13+ patterns: switch expressions, collection if/for, null-aware elements.
