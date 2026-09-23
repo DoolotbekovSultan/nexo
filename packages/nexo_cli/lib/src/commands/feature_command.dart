@@ -138,6 +138,11 @@ class FeatureCommand extends Command<int> {
         negatable: false,
         help: 'Generate NexoValidators in create/update params.',
       )
+      ..addFlag(
+        'retrofit',
+        negatable: false,
+        help: 'Generate Retrofit API interface instead of manual Dio calls.',
+      )
       ..addOption(
         'json',
         help:
@@ -308,6 +313,7 @@ class FeatureCommand extends Command<int> {
       getById: argResults!.flag('get-by-id'),
       usecaseGen: argResults!.flag('usecase-gen'),
       paginated: argResults!.flag('paginated'),
+      retrofit: argResults!.flag('retrofit'),
     );
 
     stdout.writeln('Planned feature: ${names.snakeCase}');
@@ -340,6 +346,7 @@ class FeatureCommand extends Command<int> {
     stdout.writeln('  get-by-id: ${options.getById}');
     stdout.writeln('  usecase-gen: ${options.usecaseGen}');
     stdout.writeln('  paginated: ${options.paginated}');
+    stdout.writeln('  retrofit: ${options.retrofit}');
     if (jsonFields != null) {
       stdout.writeln('  json fields: ${jsonFields.length} fields');
     }

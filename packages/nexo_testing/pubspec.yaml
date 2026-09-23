@@ -1,0 +1,13 @@
+name: nexo_testing
+version: 0.1.0
+description: Test matchers for nexo Failure and Result types.
+repository: https://github.com/DoolotbekovSultan/nexo
+publish_to: none
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  nexo_errors:
+    path: ../nexo_errors
+  matcher: ^0.12.17

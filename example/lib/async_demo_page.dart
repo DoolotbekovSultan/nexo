@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nexo/nexo.dart';
 
 enum _NetworkMode { ok, empty, offline }

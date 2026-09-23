@@ -1,0 +1,38 @@
+/// [Failure] model, mappers, and optional localized UI messages.
+library;
+
+export 'src/exceptions/app_exceptions.dart';
+export 'src/failure.dart';
+export 'src/failure_codes.dart';
+export 'src/failure_presenter.dart';
+export 'src/failure_mapper.dart';
+export 'src/failure_mapper_extension.dart';
+export 'src/nexo_crash_reporter.dart';
+export 'src/nexo_flutter_errors.dart';
+export 'src/collecting_nexo_crash_reporter.dart';
+export 'src/localization/failure_user_message_catalog.dart';
+export 'src/localization/failure_user_messages_en.dart';
+export 'src/localization/failure_user_messages_ru.dart';
+export 'src/mappers/common_failure_mapper.dart';
+export 'src/mappers/dio_failure_mapper.dart';
+export 'src/mappers/domain_exception_failure_mapper.dart';
+export 'src/mappers/failure_sub_mapper.dart';
+export 'src/mappers/file_system_failure_mapper.dart';
+export 'src/mappers/platform_failure_mapper.dart';
+export 'src/mappers/socket_failure_mapper.dart';
+export 'src/types/auth_failure.dart';
+export 'src/types/cache_failure.dart';
+export 'src/types/database_failure.dart';
+export 'src/types/file_failure.dart';
+export 'src/types/http_failure.dart';
+export 'src/types/location_failure.dart';
+export 'src/types/network_failure.dart';
+export 'src/types/notification_failure.dart';
+export 'src/types/parse_failure.dart';
+export 'src/types/payment_failure.dart';
+export 'src/types/permission_failure.dart';
+export 'src/types/platform_failure.dart';
+export 'src/types/storage_failure.dart';
+export 'src/types/sync_failure.dart';
+export 'src/types/validation_failure.dart';
+export 'src/result.dart';

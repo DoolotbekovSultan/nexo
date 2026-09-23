@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.1.0
+
+### Package Split — монолит разделён на 15 независимых пакетов
+
+**Breaking:** код больше не лежит в `lib/packages/`. Все модули вынесены в отдельные пакеты под `packages/`:
+
+| Пакет | Ответственность |
+|-------|----------------|
+| `nexo_logger` | Абстракция `NexoLogger` + `TalkerLoggerAdapter` |
+| `nexo_errors` | `Failure`, `Result`, мапперы, локализация, crash reporter |
+| `nexo_core` | Общие типы: `NoParams`, `NexoUseCaseAnnotation`, `NexoAsyncState` |
+| `nexo_validation` | `NexoValidators` (form validation) |
+| `nexo_network` | `DioClient`, interceptors, offline strategies |
+| `nexo_datasource` | Базовые abstract datasource'ы (remote + local) |
+| `nexo_usecase` | `NexoUseCase`, `NexoStreamUseCase`, retry |
+| `nexo_bloc` | `NexoBloc`, `NexoCubit`, `NexoAsyncCubit`, helpers |
+| `nexo_sync` | `NexoOutbox` (offline mutation queue) |
+| `nexo_ui` | Виджеты, extensions, gaps |
+| `nexo_testing` | Матчеры для `Failure` и `Result` |
+| `nexo_errors_firebase` | Firebase Auth + Messaging мапперы (optional) |
+| `nexo_errors_hive` | Hive маппер (optional) |
+| `nexo_errors_isar` | Isar маппер (optional) |
+| `nexo_errors_drift` | Drift/SQLite маппер (optional) |
+
+**Обратная совместимость:** `import 'package:nexo/nexo.dart'` продолжает работать — umbrella-пакет re-export'ит все дочерние.
+
+### FailureMapper — cleanup
+
+- **Удалён** deprecated `FailureMapper` (old).
+- **`FailureMapper2` → `FailureMapper`** — переименован, принимает опциональный `builtInMappers`.
+- **Platform-agnostic по дефолту** — встроенные мапперы: `DomainExceptionFailureMapper`, `DioFailureMapper`, `PlatformFailureMapper`, `FileSystemFailureMapper`, `CommonFailureMapper`.
+- **Firebase/Hive/Isar/Drift мапперы** вынесены в отдельные optional пакеты (`nexo_errors_firebase`, `nexo_errors_hive`, `nexo_errors_isar`, `nexo_errors_drift`). Проекты без Firebase/Hive/Isar больше не тянут эти зависимости.
+
+### Зависимости
+
+- `firebase_auth`, `firebase_core`, `hive`, `isar` удалены из корневого `pubspec.yaml` (теперь в отдельных пакетах).
+- Каждый дочерний пакет имеет свой `pubspec.yaml` с минимальным набором зависимостей.
+
 ## 0.0.8-beta.0
 
 ### nexo_core — BLoC/Cubit адаптация под Result<T>

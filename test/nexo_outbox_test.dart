@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/nexo_core.dart';
-import 'package:nexo/packages/nexo_errors/failure.dart';
-import 'package:nexo/packages/nexo_errors/types/sync_failure.dart';
+import 'package:nexo_sync/nexo_sync.dart';
+import 'package:nexo_errors/nexo_errors.dart';
 
 class _FailingThenOkSender {
   final sent = <OutboxEntry>[];

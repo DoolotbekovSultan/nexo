@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/packages/nexo_core/usecase/nexo_usecase.dart';
-import 'package:nexo/packages/nexo_errors/result.dart';
-import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
+import 'package:nexo_errors/nexo_errors.dart';
+import 'package:nexo_logger/nexo_logger.dart';
+import 'package:nexo_usecase/nexo_usecase.dart';
 
 class _FakeLogger implements NexoLogger {
   @override

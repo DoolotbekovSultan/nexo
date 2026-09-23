@@ -9,5 +9,4 @@
 /// ```
 library;
 
-export 'package:nexo/packages/nexo_testing/failure_matchers.dart';
-export 'package:nexo/packages/nexo_testing/result_matchers.dart';
+export 'package:nexo_testing/nexo_testing.dart';

@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/packages/nexo_core/network/interceptors/nexo_logging_interceptor.dart';
-import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
+import 'package:nexo_network/nexo_network.dart';
+import 'package:nexo_logger/nexo_logger.dart';
 
 class _CapturingLogger implements NexoLogger {
   final lines = <String>[];

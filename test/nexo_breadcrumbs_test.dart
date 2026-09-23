@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nexo/nexo_core.dart';
 import 'package:nexo/nexo_errors.dart';
-import 'package:nexo/packages/nexo_logger/nexo_logger.dart';
+import 'package:nexo_logger/nexo_logger.dart';
 
 class _CounterCubit extends Cubit<int> {
   _CounterCubit() : super(0);

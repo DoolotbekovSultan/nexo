@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/packages/nexo_core/bloc/pagination_controller.dart';
+import 'package:nexo_bloc/nexo_bloc.dart';
 
 void main() {
   group('PaginationController', () {

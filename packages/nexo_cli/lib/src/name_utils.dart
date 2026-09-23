@@ -31,7 +31,7 @@ final class NameUtils {
   String get upperCamelCase => pascalCase;
 }
 
-/// Splits `auth`, `user_profile`, `userProfile`, `UserProfile` into word tokens.
+/// Splits `auth`, `user_profile`, `userProfile`, `UserProfile` into word tokens
 List<String> _splitWords(String input) {
   var s = input.trim().replaceAll(RegExp(r'\s+'), '').replaceAll('-', '_');
   s = s.replaceAllMapped(

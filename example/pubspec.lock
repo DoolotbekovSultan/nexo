@@ -199,7 +199,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_bloc:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_bloc
       sha256: cf51747952201a455a1c840f8171d273be009b932c75093020f9af64f2123e38
@@ -454,7 +454,112 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.8-beta.0"
+    version: "0.1.0"
+  nexo_bloc:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_bloc"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_core:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_core"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_datasource:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_datasource"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_errors:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_errors"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_errors_drift:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_errors_drift"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_errors_firebase:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_errors_firebase"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_errors_hive:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_errors_hive"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_errors_isar:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_errors_isar"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_logger:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_logger"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_network:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_network"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_sync:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_sync"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_testing:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_testing"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_ui:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_ui"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_usecase:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_usecase"
+      relative: true
+    source: path
+    version: "0.1.0"
+  nexo_validation:
+    dependency: transitive
+    description:
+      path: "../packages/nexo_validation"
+      relative: true
+    source: path
+    version: "0.1.0"
   objective_c:
     dependency: transitive
     description:

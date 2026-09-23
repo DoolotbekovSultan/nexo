@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nexo/nexo_errors.dart';
-import 'package:nexo/nexo_testing.dart';
+import 'package:nexo_testing/nexo_testing.dart';
 
 void main() {
   const failure = Failure.network(type: NetworkFailure.noInternet);

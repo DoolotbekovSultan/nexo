@@ -1,0 +1,191 @@
+import 'package:nexo_errors/src/failure.dart';
+
+/// Иммутабельный результат операции: успех со значением типа [T] либо [Failure].
+///
+/// Собственный sealed-тип вместо `Either` из dartz: те же короткие имена
+/// [Right] / [Left], но работает исчерпывающий паттерн-матчинг и [Result.fold]
+/// принимает именованные колбэки.
+///
+/// ```dart
+/// final text = switch (result) {
+///   Right(:final value) => 'Данные: $value',
+///   Left(:final failure) => failure.userMessage,
+/// };
+/// ```
+sealed class Result<T> {
+  const Result();
+
+  /// Успешная ветка — алиас класса [Right].
+  const factory Result.success(T value) = Right<T>;
+
+  /// Неудачная ветка — алиас класса [Left].
+  const factory Result.failure(Failure failure) = Left<T>;
+
+  /// `true`, если результат — успех ([Right]).
+  bool get isSuccess => this is Right<T>;
+
+  /// `true`, если результат — ошибка ([Left]).
+  bool get isFailure => this is Left<T>;
+
+  /// Значение при успехе, иначе `null`.
+  T? get dataOrNull => switch (this) {
+    Right<T>(:final value) => value,
+    _ => null,
+  };
+
+  /// Ошибка при неудаче, иначе `null`.
+  Failure? get failureOrNull => switch (this) {
+    Left<T>(:final failure) => failure,
+    _ => null,
+  };
+
+  /// Разворачивает результат в одно значение.
+  ///
+  /// ```dart
+  /// final message = result.fold(
+  ///   onFailure: (f) => f.userMessage,
+  ///   onSuccess: (data) => 'Загружено: $data',
+  /// );
+  /// ```
+  R fold<R>({
+    required R Function(Failure failure) onFailure,
+    required R Function(T value) onSuccess,
+  }) => switch (this) {
+    Left<T>(:final failure) => onFailure(failure),
+    Right<T>(:final value) => onSuccess(value),
+  };
+
+  /// Преобразует значение при успехе; ошибка проходит насквозь без изменений.
+  Result<R> map<R>(R Function(T value) mapper) => switch (this) {
+    Right<T>(:final value) => Result<R>.success(mapper(value)),
+    Left<T>(:final failure) => Result<R>.failure(failure),
+  };
+
+  /// Значение при успехе, иначе результат [orElse] над ошибкой.
+  T getOrElse(T Function(Failure failure) orElse) => switch (this) {
+    Right<T>(:final value) => value,
+    Left<T>(:final failure) => orElse(failure),
+  };
+
+  /// Значение при успехе, иначе [defaultValue].
+  ///
+  /// ```dart
+  /// final items = result.orElse((_) => <Item>[]);
+  /// ```
+  T orElse(T Function(Failure failure) defaultValue) => switch (this) {
+    Right<T>(:final value) => value,
+    Left<T>(:final failure) => defaultValue(failure),
+  };
+
+  /// Side-effect без трансформации. Возвращает исходный Result.
+  ///
+  /// ```dart
+  /// result.tap(
+  ///   onSuccess: (data) => logger.info('Loaded: ${data.length}'),
+  ///   onFailure: (f) => logger.error(f.userMessage),
+  /// );
+  /// ```
+  Result<T> tap({
+    void Function(T value)? onSuccess,
+    void Function(Failure failure)? onFailure,
+  }) {
+    switch (this) {
+      case Right(:final value):
+        onSuccess?.call(value);
+      case Left(:final failure):
+        onFailure?.call(failure);
+    }
+    return this;
+  }
+
+  /// Трансформирует только Failure.
+  ///
+  /// ```dart
+  /// final mapped = result.mapFailure((f) => Failure.network(type: NetworkFailure.timeout));
+  /// ```
+  Result<T> mapFailure(Failure Function(Failure failure) mapper) =>
+      switch (this) {
+        Right<T>() => this,
+        Left(:final failure) => Left(mapper(failure)),
+      };
+
+  /// Chaining: если success — применяет [f], если failure — пропускает.
+  ///
+  /// ```dart
+  /// final names = result
+  ///   .flatMap((items) => Right(items.map((e) => e.name).toList()))
+  ///   .orElse((_) => <String>[]);
+  /// ```
+  Result<R> flatMap<R>(Result<R> Function(T value) f) => switch (this) {
+    Right(:final value) => f(value),
+    Left(:final failure) => Left(failure),
+  };
+
+  /// Паттерн-матчинг без fold.
+  ///
+  /// ```dart
+  /// final message = result.when(
+  ///   success: (data) => 'Loaded: $data',
+  ///   failure: (f) => f.userMessage,
+  /// );
+  /// ```
+  R when<R>({
+    required R Function(T value) success,
+    required R Function(Failure failure) onFailure,
+  }) => switch (this) {
+    Right(:final value) => success(value),
+    Left(:final failure) => onFailure(failure),
+  };
+
+  @override
+  String toString() => switch (this) {
+    Right<T>(:final value) => 'Right($value)',
+    Left<T>(:final failure) => 'Left($failure)',
+  };
+}
+
+/// Успешная ветка [Result]; создаётся через `Right(value)` или `Result.success(value)`.
+final class Right<T> extends Result<T> {
+  const Right(this.value);
+
+  /// Данные успеха.
+  final T value;
+
+  @override
+  bool operator ==(Object other) => other is Right && other.value == value;
+
+  @override
+  int get hashCode => Object.hash(Right, value);
+}
+
+/// Неудачная ветка [Result]; создаётся через `Left(failure)` или `Result.failure(failure)`.
+final class Left<T> extends Result<T> {
+  const Left(this.failure);
+
+  /// Ошибка неудачи.
+  final Failure failure;
+
+  @override
+  bool operator ==(Object other) => other is Left && other.failure == failure;
+
+  @override
+  int get hashCode => Object.hash(Left, failure);
+}
+
+/// Поток результатов с тем же смыслом, что и [Result].
+typedef StreamResult<T> = Stream<Result<T>>;
+
+/// Удобные расширения для [Future<Result<T>]].
+extension ResultFutureX<T> on Future<Result<T>> {
+  /// Вызывает [action] при успехе.
+  Future<void> onSuccess(void Function(T data) action) async {
+    final r = await this;
+    if (r case Right(:final value)) action(value);
+  }
+
+  /// Вызывает [action] при ошибке.
+  Future<void> onFailure(void Function(Failure failure) action) async {
+    final r = await this;
+    if (r case Left(:final failure)) action(failure);
+  }
+}

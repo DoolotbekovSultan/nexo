@@ -1,0 +1,12 @@
+name: nexo_errors_hive
+version: 0.1.0
+description: Hive failure mapper for nexo_errors.
+repository: https://github.com/DoolotbekovSultan/nexo
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  nexo_errors:
+    path: ../nexo_errors
+  hive: ^2.2.3

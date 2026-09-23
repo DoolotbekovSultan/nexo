@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nexo/packages/nexo_core/network/offline_fetch.dart';
+import 'package:nexo_network/nexo_network.dart';
 
 void main() {
   test('fetchCacheThenNetwork returns cache when hit', () async {

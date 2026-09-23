@@ -38,6 +38,7 @@ final class FeatureOptions {
     this.getById = false,
     this.usecaseGen = false,
     this.paginated = false,
+    this.retrofit = false,
   });
 
   /// Only presentation layer -- no data/ or domain/.
@@ -122,6 +123,9 @@ final class FeatureOptions {
   /// Generate BLoC with NexoPaginatedMixin for cursor-based pagination.
   final bool paginated;
 
+  /// Generate Retrofit API interface instead of manual Dio calls.
+  final bool retrofit;
+
   FeatureOptions copyWith({
     bool? presentationOnly,
     PresentationStyle? presentationStyle,
@@ -150,6 +154,7 @@ final class FeatureOptions {
     bool? getById,
     bool? usecaseGen,
     bool? paginated,
+    bool? retrofit,
   }) {
     return FeatureOptions(
       presentationOnly: presentationOnly ?? this.presentationOnly,
@@ -179,6 +184,7 @@ final class FeatureOptions {
       getById: getById ?? this.getById,
       usecaseGen: usecaseGen ?? this.usecaseGen,
       paginated: paginated ?? this.paginated,
+      retrofit: retrofit ?? this.retrofit,
     );
   }
 
@@ -211,6 +217,9 @@ final class FeatureOptions {
 
   /// Whether to use NexoPaginatedMixin for pagination.
   bool get hasPaginated => paginated;
+
+  /// Whether to use Retrofit API interface instead of manual Dio calls.
+  bool get hasRetrofit => retrofit;
 
   /// The return type string for use cases/repository methods.
   String returnType(NameUtils names) {
@@ -334,6 +343,9 @@ abstract final class FeaturePlan {
       }
     }
     lines.add('data/datasources/${s}_remote_datasource.dart');
+    if (options.hasRetrofit) {
+      lines.add('data/datasources/${s}_api.dart');
+    }
     if (options.mock) {
       lines.add('data/datasources/mock_${s}_remote_data_source.dart');
     }
@@ -498,6 +510,7 @@ abstract final class FeaturePlan {
     if (options.ui) parts.addAll(['${p}Page', '${p}Widget']);
     if (options.hasUsecaseGen) parts.add('@NexoUseCase');
     if (options.hasPaginated) parts.add('NexoPaginatedMixin');
+    if (options.hasRetrofit) parts.add('${p}Api');
     return '${parts.join(', ')} (names illustrative)';
   }
 }

@@ -1,0 +1,17 @@
+name: nexo_usecase
+version: 0.1.0
+description: UseCase abstractions for nexo.
+repository: https://github.com/DoolotbekovSultan/nexo
+publish_to: none
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  nexo_core:
+    path: ../nexo_core
+  nexo_errors:
+    path: ../nexo_errors
+  nexo_logger:
+    path: ../nexo_logger
+  stream_transform: ^2.1.1
