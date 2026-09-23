@@ -49,3 +49,35 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   dio: ^5.10.0
   flutter_bloc: ^9.1.1
+
+dependency_overrides:
+  nexo_bloc:
+    path: packages/nexo_bloc
+  nexo_core:
+    path: packages/nexo_core
+  nexo_datasource:
+    path: packages/nexo_datasource
+  nexo_errors:
+    path: packages/nexo_errors
+  nexo_errors_drift:
+    path: packages/nexo_errors_drift
+  nexo_errors_firebase:
+    path: packages/nexo_errors_firebase
+  nexo_errors_hive:
+    path: packages/nexo_errors_hive
+  nexo_errors_isar:
+    path: packages/nexo_errors_isar
+  nexo_logger:
+    path: packages/nexo_logger
+  nexo_network:
+    path: packages/nexo_network
+  nexo_sync:
+    path: packages/nexo_sync
+  nexo_testing:
+    path: packages/nexo_testing
+  nexo_ui:
+    path: packages/nexo_ui
+  nexo_usecase:
+    path: packages/nexo_usecase
+  nexo_validation:
+    path: packages/nexo_validation
