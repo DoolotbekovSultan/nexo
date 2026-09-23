@@ -7,6 +7,5 @@ environment:
   sdk: ^3.11.3
 
 dependencies:
-  nexo_errors:
-    path: ../nexo_errors
+  nexo_errors: ^0.1.0
   matcher: ^0.12.17

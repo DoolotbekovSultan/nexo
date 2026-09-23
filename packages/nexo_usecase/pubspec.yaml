@@ -7,10 +7,7 @@ environment:
   sdk: ^3.11.3
 
 dependencies:
-  nexo_core:
-    path: ../nexo_core
-  nexo_errors:
-    path: ../nexo_errors
-  nexo_logger:
-    path: ../nexo_logger
+  nexo_core: ^0.1.0
+  nexo_errors: ^0.1.0
+  nexo_logger: ^0.1.0
   stream_transform: ^2.1.1

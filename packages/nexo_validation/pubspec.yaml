@@ -8,7 +8,6 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
-  nexo_errors:
-    path: ../nexo_errors
+  nexo_errors: ^0.1.0
   flutter:
     sdk: flutter

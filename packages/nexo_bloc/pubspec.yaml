@@ -8,12 +8,9 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
-  nexo_core:
-    path: ../nexo_core
-  nexo_errors:
-    path: ../nexo_errors
-  nexo_logger:
-    path: ../nexo_logger
+  nexo_core: ^0.1.0
+  nexo_errors: ^0.1.0
+  nexo_logger: ^0.1.0
   bloc: ^9.2.0
   bloc_concurrency: ^0.3.0
   flutter_bloc: ^9.1.1
