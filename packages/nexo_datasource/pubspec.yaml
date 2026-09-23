@@ -2,17 +2,14 @@ name: nexo_datasource
 version: 0.1.0
 description: Base datasource abstractions for nexo.
 repository: https://github.com/DoolotbekovSultan/nexo
-publish_to: none
 
 environment:
   sdk: ^3.11.3
   flutter: ">=1.17.0"
 
 dependencies:
-  nexo_logger:
-    path: ../nexo_logger
-  nexo_network:
-    path: ../nexo_network
+  nexo_logger: ^0.1.0
+  nexo_network: ^0.1.0
   dio: ^5.10.0
   hive: ^2.2.3
   isar: ^3.1.0+1

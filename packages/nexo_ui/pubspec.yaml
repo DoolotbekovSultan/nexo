@@ -2,17 +2,14 @@ name: nexo_ui
 version: 0.1.0
 description: UI utilities, widgets, and wrappers for nexo.
 repository: https://github.com/DoolotbekovSultan/nexo
-publish_to: none
 
 environment:
   sdk: ^3.11.3
   flutter: ">=1.17.0"
 
 dependencies:
-  nexo_core:
-    path: ../nexo_core
-  nexo_errors:
-    path: ../nexo_errors
+  nexo_core: ^0.1.0
+  nexo_errors: ^0.1.0
   flutter:
     sdk: flutter
   flutter_screenutil: ^5.9.3

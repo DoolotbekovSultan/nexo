@@ -2,13 +2,10 @@ name: nexo_sync
 version: 0.1.0
 description: Offline outbox pattern for nexo.
 repository: https://github.com/DoolotbekovSultan/nexo
-publish_to: none
 
 environment:
   sdk: ^3.11.3
 
 dependencies:
-  nexo_errors:
-    path: ../nexo_errors
-  nexo_logger:
-    path: ../nexo_logger
+  nexo_errors: ^0.1.0
+  nexo_logger: ^0.1.0

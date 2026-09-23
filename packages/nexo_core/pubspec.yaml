@@ -2,14 +2,12 @@ name: nexo_core
 version: 0.1.0
 description: Shared types for nexo packages.
 repository: https://github.com/DoolotbekovSultan/nexo
-publish_to: none
 
 environment:
   sdk: ^3.11.3
   flutter: ">=1.17.0"
 
 dependencies:
+  nexo_errors: ^0.1.0
   flutter:
     sdk: flutter
-  nexo_errors:
-    path: ../nexo_errors

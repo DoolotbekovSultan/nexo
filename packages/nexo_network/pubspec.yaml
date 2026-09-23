@@ -2,17 +2,14 @@ name: nexo_network
 version: 0.1.0
 description: Network abstractions (DioClient, interceptors) for nexo.
 repository: https://github.com/DoolotbekovSultan/nexo
-publish_to: none
 
 environment:
   sdk: ^3.11.3
   flutter: ">=1.17.0"
 
 dependencies:
-  nexo_logger:
-    path: ../nexo_logger
-  nexo_errors:
-    path: ../nexo_errors
+  nexo_logger: ^0.1.0
+  nexo_errors: ^0.1.0
   dio: ^5.10.0
   flutter:
     sdk: flutter

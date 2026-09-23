@@ -2,19 +2,15 @@ name: nexo_bloc
 version: 0.1.0
 description: BLoC/Cubit abstractions and helpers for nexo.
 repository: https://github.com/DoolotbekovSultan/nexo
-publish_to: none
 
 environment:
   sdk: ^3.11.3
   flutter: ">=1.17.0"
 
 dependencies:
-  nexo_core:
-    path: ../nexo_core
-  nexo_errors:
-    path: ../nexo_errors
-  nexo_logger:
-    path: ../nexo_logger
+  nexo_core: ^0.1.0
+  nexo_errors: ^0.1.0
+  nexo_logger: ^0.1.0
   bloc: ^9.2.0
   bloc_concurrency: ^0.3.0
   flutter_bloc: ^9.1.1
