@@ -270,23 +270,26 @@ packages:
   nexo_errors:
     dependency: transitive
     description:
-      path: "../nexo_errors"
-      relative: true
-    source: path
+      name: nexo_errors
+      sha256: "71dff425810bd0aa50c88a49ffaec1b8f8df77d991d2658bd980cd8c4fbf1ad0"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   nexo_logger:
     dependency: "direct main"
     description:
-      path: "../nexo_logger"
-      relative: true
-    source: path
+      name: nexo_logger
+      sha256: "1cde9e9511380defb5038a7134d27d93f46e3110a88fa1215f2afe8ef6c483f6"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   nexo_network:
     dependency: "direct main"
     description:
-      path: "../nexo_network"
-      relative: true
-    source: path
+      name: nexo_network
+      sha256: "34986c87ff18616e1767afea2ed1a5d86bb7cf7c6d08ed10beaa87498e4a218a"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.1.0"
   objective_c:
     dependency: transitive

@@ -14,5 +14,6 @@ dependencies:
   bloc: ^9.2.0
   bloc_concurrency: ^0.3.0
   flutter_bloc: ^9.1.1
+  stream_transform: ^2.1.1
   flutter:
     sdk: flutter

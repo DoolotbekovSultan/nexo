@@ -138,7 +138,7 @@ linter:
     - avoid_renaming_method_parameters
     - avoid_returning_null_for_future
     - avoid_returning_null_for_void
-    - avoid_single_cascade_in_expression_statements
+    - avoid_single_cascade_in_expresssion_statements
     - avoid_slow_async_io
     - avoid_unused_constructor_parameters
     - avoid_void_async
