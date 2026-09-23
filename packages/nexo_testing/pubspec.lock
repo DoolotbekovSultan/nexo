@@ -121,18 +121,16 @@ packages:
   nexo_errors:
     dependency: "direct main"
     description:
-      name: nexo_errors
-      sha256: "71dff425810bd0aa50c88a49ffaec1b8f8df77d991d2658bd980cd8c4fbf1ad0"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../nexo_errors"
+      relative: true
+    source: path
     version: "0.1.0"
   nexo_logger:
     dependency: transitive
     description:
-      name: nexo_logger
-      sha256: "1cde9e9511380defb5038a7134d27d93f46e3110a88fa1215f2afe8ef6c483f6"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../nexo_logger"
+      relative: true
+    source: path
     version: "0.1.0"
   path:
     dependency: transitive

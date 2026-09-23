@@ -42,7 +42,7 @@ abstract class NexoBloc<Event, S> extends Bloc<Event, S> with FailureSupport {
     required S Function(T data) onSuccess,
     required S Function(Failure failure) onError,
   }) => nexoExecute(
-    emit: emit,
+    emit: emit.call,
     isDone: emit.isDone,
     action: action,
     onLoading: onLoading,
@@ -58,7 +58,7 @@ abstract class NexoBloc<Event, S> extends Bloc<Event, S> with FailureSupport {
     required S Function(T data) onSuccess,
     required S Function(Failure failure) onError,
   }) => nexoExecuteEither(
-    emit: emit,
+    emit: emit.call,
     isDone: emit.isDone,
     action: action,
     onLoading: onLoading,

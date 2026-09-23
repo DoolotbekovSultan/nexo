@@ -7,5 +7,6 @@ environment:
   sdk: ^3.11.3
 
 dependencies:
-  nexo_errors: ^0.1.0
+  nexo_errors:
+    path: ../nexo_errors
   hive: ^2.2.3
